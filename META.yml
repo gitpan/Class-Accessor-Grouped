@@ -1,0 +1,15 @@
+---
+name: Class-Accessor-Grouped
+version: 0.01
+author: ~
+abstract: Lets you build groups of accessors
+license: perl
+requires:
+  Carp: 0
+  Class::ISA: 0
+  Scalar::Util: 0
+provides:
+  Class::Accessor::Grouped:
+    file: lib/Class/Accessor/Grouped.pm
+    version: 0.01
+generated_by: Module::Build version 0.26
