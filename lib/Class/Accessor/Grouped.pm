@@ -6,11 +6,11 @@ use Class::ISA;
 use Scalar::Util qw/blessed reftype/;
 use vars qw($VERSION);
 
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 =head1 NAME
 
-Class:Accessor::Grouped - Lets you build groups of accessors
+Class::Accessor::Grouped - Lets you build groups of accessors
 
 =head1 SYNOPSIS
 
@@ -305,6 +305,8 @@ sub get_inherited {
     foreach (@supers) {
         return ${$_.'::_'.$get} if defined(${$_.'::_'.$get});
     };
+
+    return;
 }
 
 =head2 set_inherited
@@ -346,6 +348,7 @@ sub set_inherited {
 =head1 AUTHORS
 
 Matt S. Trout <mst@shadowcatsystems.co.uk>
+Christopher H. Laco <claco@chrislaco.com>
 
 =head1 LICENSE
 

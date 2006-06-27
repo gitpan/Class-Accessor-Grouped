@@ -1,7 +1,9 @@
 ---
 name: Class-Accessor-Grouped
-version: 0.01
-author: ~
+version: 0.02
+author:
+  - 'Matt S. Trout <mst@shadowcatsystems.co.uk>'
+  - 'Christopher H. Laco <claco@chrislaco.com>'
 abstract: Lets you build groups of accessors
 license: perl
 requires:
@@ -11,5 +13,5 @@ requires:
 provides:
   Class::Accessor::Grouped:
     file: lib/Class/Accessor/Grouped.pm
-    version: 0.01
+    version: 0.02
 generated_by: Module::Build version 0.26

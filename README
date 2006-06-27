@@ -1,5 +1,5 @@
 NAME
-    Class:Accessor::Grouped - Lets you build groups of accessors
+    Class::Accessor::Grouped - Lets you build groups of accessors
 
 SYNOPSIS
 DESCRIPTION
@@ -95,7 +95,8 @@ METHODS
     non hash-based object.
 
 AUTHORS
-    Matt S. Trout <mst@shadowcatsystems.co.uk>
+    Matt S. Trout <mst@shadowcatsystems.co.uk> Christopher H. Laco
+    <claco@chrislaco.com>
 
 LICENSE
     You may distribute this code under the same terms as Perl itself.
