@@ -1,11 +1,13 @@
 ---
 name: Class-Accessor-Grouped
-version: 0.02
+version: 0.03
 author:
   - 'Matt S. Trout <mst@shadowcatsystems.co.uk>'
   - 'Christopher H. Laco <claco@chrislaco.com>'
 abstract: Lets you build groups of accessors
 license: perl
+resources:
+  license: http://dev.perl.org/licenses/
 requires:
   Carp: 0
   Class::ISA: 0
@@ -13,5 +15,8 @@ requires:
 provides:
   Class::Accessor::Grouped:
     file: lib/Class/Accessor/Grouped.pm
-    version: 0.02
-generated_by: Module::Build version 0.26
+    version: 0.03
+generated_by: Module::Build version 0.280501
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.2.html
+  version: 1.2

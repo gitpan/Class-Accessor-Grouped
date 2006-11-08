@@ -94,6 +94,10 @@ METHODS
     Note:: This method will die if you try to set an object variable on a
     non hash-based object.
 
+  get_super_paths
+    Returns a list of 'parent' or 'super' class names that the current class
+    inherited from.
+
 AUTHORS
     Matt S. Trout <mst@shadowcatsystems.co.uk> Christopher H. Laco
     <claco@chrislaco.com>
