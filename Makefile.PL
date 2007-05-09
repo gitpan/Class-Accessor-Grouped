@@ -1,4 +1,4 @@
-# $Id: Makefile.PL 3252 2007-05-06 02:24:39Z claco $
+# $Id: Makefile.PL 3271 2007-05-09 01:55:34Z claco $
 use strict;
 use warnings;
 use inc::Module::Install 0.65;
@@ -11,6 +11,7 @@ all_from 'lib/Class/Accessor/Grouped.pm';
 requires 'Carp';
 requires 'Scalar::Util';
 requires 'Class::ISA';
+requires 'Class::Inspector';
 
 tests "t/*.t t/*/*.t";
 clean_files "Class-Accessor-Grouped-* t/var";

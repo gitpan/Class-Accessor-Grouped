@@ -1,5 +1,5 @@
 #!perl -w
-# $Id: pod_spelling.t 3252 2007-05-06 02:24:39Z claco $
+# $Id: pod_spelling.t 3259 2007-05-06 03:59:58Z claco $
 use strict;
 use warnings;
 

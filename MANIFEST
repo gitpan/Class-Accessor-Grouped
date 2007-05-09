@@ -21,6 +21,7 @@ t/accessors.t
 t/accessors_ro.t
 t/accessors_wo.t
 t/basic.t
+t/component.t
 t/inherited.t
 t/lib/AccessorGroups.pm
 t/lib/AccessorGroupsRO.pm
