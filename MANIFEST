@@ -28,6 +28,7 @@ t/lib/AccessorGroupsRO.pm
 t/lib/AccessorGroupsWO.pm
 t/lib/BaseInheritedGroups.pm
 t/lib/NotHashBased.pm
+t/lib/NotReallyAClass.pm
 t/lib/SuperInheritedGroups.pm
 t/manifest.t
 t/pod_coverage.t

@@ -1,5 +1,5 @@
 #!perl -wT
-# $Id: strict.t 3252 2007-05-06 02:24:39Z claco $
+# $Id: strict.t 3289 2007-05-11 01:34:21Z claco $
 use strict;
 use warnings;
 
@@ -20,7 +20,7 @@ BEGIN {
 ## finally run under -T. Until then, I'm on my own here. ;-)
 my @files;
 my %trusted = (
-
+    'NotReallyAClass.pm' => 1
 );
 
 find({  wanted => \&wanted,
