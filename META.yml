@@ -14,9 +14,9 @@ no_index:
     - t
 requires: 
   Carp: 0
-  Class::ISA: 0
   Class::Inspector: 0
+  MRO::Compat: 0
   Scalar::Util: 0
   perl: 5.6.1
 tests: t/*.t t/*/*.t
-version: 0.05002
+version: 0.06000

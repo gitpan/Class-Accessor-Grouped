@@ -1,4 +1,4 @@
-# $Id: Makefile.PL 3271 2007-05-09 01:55:34Z claco $
+# $Id: Makefile.PL 3309 2007-05-12 02:37:26Z claco $
 use strict;
 use warnings;
 use inc::Module::Install 0.65;
@@ -10,7 +10,7 @@ all_from 'lib/Class/Accessor/Grouped.pm';
 
 requires 'Carp';
 requires 'Scalar::Util';
-requires 'Class::ISA';
+requires 'MRO::Compat';
 requires 'Class::Inspector';
 
 tests "t/*.t t/*/*.t";
