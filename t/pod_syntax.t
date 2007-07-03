@@ -1,5 +1,5 @@
 #!perl -wT
-# $Id: pod_syntax.t 3252 2007-05-06 02:24:39Z claco $
+# $Id: /local/Class-Accessor-Grouped/t/pod_syntax.t 1693 2007-05-06T02:24:39.381139Z claco  $
 use strict;
 use warnings;
 

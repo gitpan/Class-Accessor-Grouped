@@ -1,4 +1,4 @@
-# $Id: Makefile.PL 3309 2007-05-12 02:37:26Z claco $
+# $Id: /local/Class-Accessor-Grouped/Makefile.PL 1700 2007-07-02T01:08:11.474048Z claco  $
 use strict;
 use warnings;
 use inc::Module::Install 0.65;
@@ -16,9 +16,10 @@ requires 'Class::Inspector';
 tests "t/*.t t/*/*.t";
 clean_files "Class-Accessor-Grouped-* t/var";
 
-eval {
-    system 'pod2text lib/Class/Accessor/Grouped.pm > README';
-};
-
 auto_install;
-WriteAll;
+
+WriteMakefile(
+  dist => {
+    PREOP => 'pod2text lib/Class/Accessor/Grouped.pm > README'
+  }
+);

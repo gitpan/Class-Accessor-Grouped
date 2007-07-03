@@ -8,7 +8,7 @@ use MRO::Compat;
 
 use vars qw($VERSION);
 
-$VERSION = '0.06000';
+$VERSION = '0.07000';
 
 =head1 NAME
 
@@ -318,7 +318,7 @@ sub get_inherited {
         return ${$_.'::__cag_'.$get} if defined(${$_.'::__cag_'.$get});
     };
 
-    return;
+    return undef;
 }
 
 =head2 set_inherited

@@ -1,5 +1,5 @@
 #!perl -w
-# $Id: pod_spelling.t 3259 2007-05-06 03:59:58Z claco $
+# $Id: /local/Class-Accessor-Grouped/t/pod_spelling.t 1700 2007-07-02T01:08:11.474048Z claco  $
 use strict;
 use warnings;
 
@@ -33,3 +33,4 @@ claco
 stylings
 fieldspec
 listref
+getters
