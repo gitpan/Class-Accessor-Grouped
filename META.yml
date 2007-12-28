@@ -1,8 +1,9 @@
 --- 
 abstract: Lets you build groups of accessors
-author: Matt S. Trout <mst@shadowcatsystems.co.uk>
+author: 
+  - Matt S. Trout <mst@shadowcatsystems.co.uk>
 distribution_type: module
-generated_by: Module::Install version 0.67
+generated_by: Module::Install version 0.68
 license: perl
 meta-spec: 
   url: http://module-build.sourceforge.net/META-spec-v1.3.html
@@ -19,4 +20,4 @@ requires:
   Scalar::Util: 0
   perl: 5.6.1
 tests: t/*.t t/*/*.t
-version: 0.07000
+version: 0.07999_01

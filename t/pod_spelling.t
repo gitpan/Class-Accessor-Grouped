@@ -1,5 +1,5 @@
 #!perl -w
-# $Id: /local/Class-Accessor-Grouped/t/pod_spelling.t 1700 2007-07-02T01:08:11.474048Z claco  $
+# $Id: /local/CPAN/Class-Accessor-Grouped/t/pod_spelling.t 26 2007-07-02T01:46:31.239709Z claco  $
 use strict;
 use warnings;
 
