@@ -20,4 +20,4 @@ requires:
   Scalar::Util: 0
   perl: 5.6.1
 tests: t/*.t t/*/*.t
-version: 0.07999_01
+version: 0.08000
