@@ -19,5 +19,4 @@ requires:
   MRO::Compat: 0
   Scalar::Util: 0
   perl: 5.6.1
-tests: t/*.t t/*/*.t
-version: 0.08000
+version: 0.08001
