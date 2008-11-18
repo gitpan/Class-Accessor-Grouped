@@ -1,5 +1,5 @@
 #!perl -wT
-# $Id: /local/CPAN/Class-Accessor-Grouped/t/style_no_tabs.t 20 2007-05-06T02:24:39.381139Z claco  $
+# $Id$
 use strict;
 use warnings;
 

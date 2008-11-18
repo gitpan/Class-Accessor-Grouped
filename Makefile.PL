@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Class-Accessor-Grouped/Makefile.PL 1165 2008-01-10T00:37:13.965078Z claco  $
+# $Id$
 use strict;
 use warnings;
 use inc::Module::Install 0.65;
