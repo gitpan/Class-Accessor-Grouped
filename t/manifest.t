@@ -1,5 +1,5 @@
 #!perl -wT
-# $Id$
+# $Id: manifest.t 5159 2008-11-18 02:10:02Z claco $
 use strict;
 use warnings;
 

@@ -1,5 +1,5 @@
 #!perl -wT
-# $Id$
+# $Id: style_no_tabs.t 3252 2007-05-06 02:24:39Z claco $
 use strict;
 use warnings;
 

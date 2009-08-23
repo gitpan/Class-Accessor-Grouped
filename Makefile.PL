@@ -1,7 +1,7 @@
-# $Id$
+# $Id: Makefile.PL 7003 2009-07-08 02:24:06Z claco $
 use strict;
 use warnings;
-use inc::Module::Install 0.65;
+use inc::Module::Install 0.91;
 
 name 'Class-Accessor-Grouped';
 license 'perl';
