@@ -7,23 +7,8 @@ use Scalar::Util ();
 use MRO::Compat;
 use Sub::Name ();
 
-our $VERSION = '0.09000';
-
-BEGIN {
-    our $hasXS;
-
-    sub _hasXS {
-        return $hasXS if defined $hasXS;
-    
-        $hasXS = 0;
-        eval {
-            require Class::XSAccessor;
-            $hasXS = 1;
-        };
-    
-        return $hasXS;
-    }
-}
+our $VERSION = '0.09001';
+$VERSION = eval $VERSION;
 
 =head1 NAME
 
@@ -129,7 +114,7 @@ Returns: none
 =back
 
 Creates a set of read only accessors in a given group. Identical to
-<L:/mk_group_accessors> but accessors will throw an error if passed a value
+L</mk_group_accessors> but accessors will throw an error if passed a value
 rather than setting the value.
 
 =cut
@@ -151,7 +136,7 @@ Returns: none
 =back
 
 Creates a set of write only accessors in a given group. Identical to
-<L:/mk_group_accessors> but accessors will throw an error if not passed a
+L</mk_group_accessors> but accessors will throw an error if not passed a
 value rather than getting the value.
 
 =cut
@@ -453,6 +438,24 @@ sub get_super_paths {
     return @{mro::get_linear_isa($class)};
 };
 
+# This is now a hard, rather than optional dep. Since we dep on Sub::Name, we no
+# longer care about not using XS modules.
+{
+    our $hasXS;
+
+    sub _hasXS {
+        return $hasXS if defined $hasXS;
+    
+        $hasXS = 0;
+        eval {
+            require Class::XSAccessor;
+            $hasXS = 1;
+        };
+    
+        return $hasXS;
+    }
+}
+
 1;
 
 =head1 AUTHORS
@@ -464,9 +467,11 @@ With contributions from:
 
 Guillermo Roditi <groditi@cpan.org>
 
-=head1 LICENSE
+=head1 COPYRIGHT & LICENSE
 
-You may distribute this code under the same terms as Perl itself.
+Copyright (c) 2006-2009 Matt S. Trout <mst@shadowcatsystems.co.uk>
+
+This program is free software; you can redistribute it and/or modify
+it under the same terms as perl itself.
 
 =cut
-

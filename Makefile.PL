@@ -1,4 +1,4 @@
-# $Id: Makefile.PL 7003 2009-07-08 02:24:06Z claco $
+# $Id: Makefile.PL 7752 2009-10-01 22:10:04Z caelum $
 use strict;
 use warnings;
 use inc::Module::Install 0.91;
@@ -13,20 +13,20 @@ requires 'Scalar::Util';
 requires 'MRO::Compat';
 requires 'Class::Inspector';
 requires 'Sub::Name' => '0.04';
-
-feature 'XS Accessor Support',
-  -default => 0,
-  'Class::XSAccessor' => 0;
-
+requires 'Class::XSAccessor';
 
 test_requires 'Sub::Identify';
 
 clean_files "Class-Accessor-Grouped-* t/var";
 
+if (-e 'MANIFEST.SKIP') {
+    system('pod2text lib/Class/Accessor/Grouped.pm > README');
+}
+
+auto_provides;
 auto_install;
 
-WriteMakefile(
-  dist => {
-    PREOP => 'pod2text lib/Class/Accessor/Grouped.pm > README'
-  }
-);
+resources repository =>
+'http://dev.catalyst.perl.org/repos/bast/trunk/Class-Accessor-Grouped/';
+
+WriteAll;
