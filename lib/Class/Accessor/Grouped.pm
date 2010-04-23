@@ -7,8 +7,29 @@ use Scalar::Util ();
 use MRO::Compat;
 use Sub::Name ();
 
-our $VERSION = '0.09002';
+our $VERSION = '0.09003';
 $VERSION = eval $VERSION;
+
+# Class::XSAccessor is segfaulting on win32, so be careful
+# Win32 users can set $hasXS to try to use it anyway
+
+our $hasXS;
+
+sub _hasXS {
+
+  if (not defined $hasXS) {
+    $hasXS = 0;
+
+    if ($^O ne 'MSWin32') {
+      eval {
+        require Class::XSAccessor;
+        $hasXS = 1;
+      };
+    }
+  }
+
+  return $hasXS;
+}
 
 =head1 NAME
 
@@ -84,6 +105,7 @@ sub mk_group_accessors {
             my $full_alias = join('::', $class, $alias);
             
             if ( $hasXS && $group eq 'simple' ) {
+                require Class::XSAccessor;
                 Class::XSAccessor::newxs_accessor("${class}::${name}", $field, 0);
                 Class::XSAccessor::newxs_accessor("${class}::${alias}", $field, 0);
                 
@@ -438,29 +460,16 @@ sub get_super_paths {
     return @{mro::get_linear_isa($class)};
 };
 
-# This is now a hard, rather than optional dep. Since we dep on Sub::Name, we no
-# longer care about not using XS modules.
-
-# Class::XSAccessor is segfaulting in some places, so removing for now.
-{
-    our $hasXS;
-
-    sub _hasXS { 0 }
-
-#    sub _hasXS {
-#        return $hasXS if defined $hasXS;
-#    
-#        $hasXS = 0;
-#        eval {
-#            require Class::XSAccessor;
-#            $hasXS = 1;
-#        };
-#    
-#        return $hasXS;
-#    }
-}
-
 1;
+
+=head1 Performance
+
+You can speed up accessors of type 'simple' by installing L<Class::XSAccessor>.
+Note however that the use of this module is disabled by default on Win32
+systems, as it causes yet unresolved segfaults. If you are a Win32 user, and
+want to try this module with L<Class::XSAccessor>, set
+C<$Class::Accessor::Grouped::hasXS> to a true value B<before> registering
+your accessors (e.g. in a C<BEGIN> block)
 
 =head1 AUTHORS
 
@@ -473,7 +482,7 @@ Guillermo Roditi <groditi@cpan.org>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright (c) 2006-2009 Matt S. Trout <mst@shadowcatsystems.co.uk>
+Copyright (c) 2006-2010 Matt S. Trout <mst@shadowcatsystems.co.uk>
 
 This program is free software; you can redistribute it and/or modify
 it under the same terms as perl itself.

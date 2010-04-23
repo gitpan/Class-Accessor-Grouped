@@ -8,7 +8,7 @@ build_requires:
 configure_requires:
   ExtUtils::MakeMaker: 6.42
 distribution_type: module
-generated_by: 'Module::Install version 0.91'
+generated_by: 'Module::Install version 0.94'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -21,7 +21,7 @@ no_index:
 provides:
   Class::Accessor::Grouped:
     file: lib/Class/Accessor/Grouped.pm
-    version: 0.09002
+    version: 0.09003
 requires:
   Carp: 0
   Class::Inspector: 0
@@ -32,4 +32,4 @@ requires:
 resources:
   license: http://dev.perl.org/licenses/
   repository: http://dev.catalyst.perl.org/repos/bast/trunk/Class-Accessor-Grouped/
-version: 0.09002
+version: 0.09003
