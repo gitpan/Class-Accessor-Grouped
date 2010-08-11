@@ -1,4 +1,4 @@
-# $Id: Makefile.PL 7804 2009-10-20 23:19:14Z caelum $
+# $Id: Makefile.PL 9217 2010-04-26 08:14:25Z ribasushi $
 use strict;
 use warnings;
 use inc::Module::Install 0.91;
@@ -31,6 +31,6 @@ auto_provides;
 auto_install;
 
 resources repository =>
-'http://dev.catalyst.perl.org/repos/bast/trunk/Class-Accessor-Grouped/';
+'http://dev.catalyst.perl.org/repos/bast/Class-Accessor-Grouped/trunk';
 
 WriteAll;

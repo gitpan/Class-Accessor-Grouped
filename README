@@ -128,21 +128,17 @@ METHODS
     Returns a list of 'parent' or 'super' class names that the current class
     inherited from.
 
-Performance
+PERFORMANCE
     You can speed up accessors of type 'simple' by installing
-    Class::XSAccessor. Note however that the use of this module is disabled
-    by default on Win32 systems, as it causes yet unresolved segfaults. If
-    you are a Win32 user, and want to try this module with
-    Class::XSAccessor, set $Class::Accessor::Grouped::hasXS to a true value
-    before registering your accessors (e.g. in a "BEGIN" block)
+    Class::XSAccessor.
 
 AUTHORS
     Matt S. Trout <mst@shadowcatsystems.co.uk> Christopher H. Laco
     <claco@chrislaco.com>
 
-    With contributions from:
-
-    Guillermo Roditi <groditi@cpan.org>
+CONTRIBUTORS
+    groditi: Guillermo Roditi <groditi@cpan.org> ribasushi: Peter Rabbitson
+    <ribasushi@cpan.org> Jason Plum <jason.plum@bmmsi.com>
 
 COPYRIGHT & LICENSE
     Copyright (c) 2006-2010 Matt S. Trout <mst@shadowcatsystems.co.uk>

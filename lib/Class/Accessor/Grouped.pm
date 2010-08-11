@@ -7,25 +7,19 @@ use Scalar::Util ();
 use MRO::Compat;
 use Sub::Name ();
 
-our $VERSION = '0.09003';
+our $VERSION = '0.09004';
 $VERSION = eval $VERSION;
-
-# Class::XSAccessor is segfaulting on win32, so be careful
-# Win32 users can set $hasXS to try to use it anyway
 
 our $hasXS;
 
 sub _hasXS {
-
   if (not defined $hasXS) {
     $hasXS = 0;
 
-    if ($^O ne 'MSWin32') {
-      eval {
-        require Class::XSAccessor;
-        $hasXS = 1;
-      };
-    }
+    eval {
+      require Class::XSAccessor;
+      $hasXS = 1;
+    };
   }
 
   return $hasXS;
@@ -103,13 +97,16 @@ sub mk_group_accessors {
             my $alias = "_${name}_accessor";
             my $full_name = join('::', $class, $name);
             my $full_alias = join('::', $class, $alias);
-            
             if ( $hasXS && $group eq 'simple' ) {
                 require Class::XSAccessor;
-                Class::XSAccessor::newxs_accessor("${class}::${name}", $field, 0);
-                Class::XSAccessor::newxs_accessor("${class}::${alias}", $field, 0);
-                
-                # XXX: is the alias accessor really necessary?
+                Class::XSAccessor->import({
+                  replace => 1,
+                  class => $class,
+                  accessors => {
+                    $name => $field,
+                    $alias => $field,
+                  },
+                });
             }
             else {
                 my $accessor = $self->$maker($group, $field);
@@ -190,15 +187,20 @@ sub make_group_accessor {
     my $set = "set_$group";
     my $get = "get_$group";
 
+    $field =~ s/'/\\'/g;
+
     # eval for faster fastiness
-    return eval "sub {
+    my $code = eval "sub {
         if(\@_ > 1) {
             return shift->$set('$field', \@_);
         }
         else {
             return shift->$get('$field');
         }
-    };"
+    };";
+    Carp::croak $@ if $@;
+
+    return $code;
 }
 
 =head2 make_group_ro_accessor
@@ -221,7 +223,9 @@ sub make_group_ro_accessor {
 
     my $get = "get_$group";
 
-    return eval "sub {
+    $field =~ s/'/\\'/g;
+
+    my $code = eval "sub {
         if(\@_ > 1) {
             my \$caller = caller;
             Carp::croak(\"'\$caller' cannot alter the value of '$field' on \".
@@ -230,7 +234,10 @@ sub make_group_ro_accessor {
         else {
             return shift->$get('$field');
         }
-    };"
+    };";
+    Carp::croak $@ if $@;
+
+    return $code;
 }
 
 =head2 make_group_wo_accessor
@@ -253,7 +260,9 @@ sub make_group_wo_accessor {
 
     my $set = "set_$group";
 
-    return eval "sub {
+    $field =~ s/'/\\'/g;
+
+    my $code = eval "sub {
         unless (\@_ > 1) {
             my \$caller = caller;
             Carp::croak(\"'\$caller' cannot access the value of '$field' on \".
@@ -262,7 +271,10 @@ sub make_group_wo_accessor {
         else {
             return shift->$set('$field', \@_);
         }
-    };"
+    };";
+    Carp::croak $@ if $@;
+
+    return $code;
 }
 
 =head2 get_simple
@@ -325,32 +337,33 @@ instances.
 sub get_inherited {
     my $class;
 
-    if (Scalar::Util::blessed $_[0]) {
-        my $reftype = Scalar::Util::reftype $_[0];
-        $class = ref $_[0];
-
-        if ($reftype eq 'HASH' && exists $_[0]->{$_[1]}) {
-            return $_[0]->{$_[1]};
-        } elsif ($reftype ne 'HASH') {
-            Carp::croak('Cannot get inherited value on an object instance that is not hash-based');
-        };
-    } else {
+    if ( ($class = ref $_[0]) && Scalar::Util::blessed $_[0]) {
+        if (Scalar::Util::reftype $_[0] eq 'HASH') {
+          return $_[0]->{$_[1]} if exists $_[0]->{$_[1]};
+        }
+        else {
+          Carp::croak('Cannot get inherited value on an object instance that is not hash-based');
+        }
+    }
+    else {
         $class = $_[0];
-    };
+    }
 
     no strict 'refs';
     no warnings qw/uninitialized/;
-    return ${$class.'::__cag_'.$_[1]} if defined(${$class.'::__cag_'.$_[1]});
+
+    my $cag_slot = '::__cag_'. $_[1];
+    return ${$class.$cag_slot} if defined(${$class.$cag_slot});
 
     # we need to be smarter about recalculation, as @ISA (thus supers) can very well change in-flight
-    my $pkg_gen = mro::get_pkg_gen ($class);
-    if ( ${$class.'::__cag_pkg_gen'} != $pkg_gen ) {
-        @{$class.'::__cag_supers'} = $_[0]->get_super_paths;
-        ${$class.'::__cag_pkg_gen'} = $pkg_gen;
-    };
+    my $cur_gen = mro::get_pkg_gen ($class);
+    if ( $cur_gen != ${$class.'::__cag_pkg_gen__'} ) {
+        @{$class.'::__cag_supers__'} = $_[0]->get_super_paths;
+        ${$class.'::__cag_pkg_gen__'} = $cur_gen;
+    }
 
-    foreach (@{$class.'::__cag_supers'}) {
-        return ${$_.'::__cag_'.$_[1]} if defined(${$_.'::__cag_'.$_[1]});
+    for (@{$class.'::__cag_supers__'}) {
+        return ${$_.$cag_slot} if defined(${$_.$cag_slot});
     };
 
     return undef;
@@ -455,30 +468,25 @@ Returns a list of 'parent' or 'super' class names that the current class inherit
 =cut
 
 sub get_super_paths {
-    my $class = Scalar::Util::blessed $_[0] || $_[0];
-
-    return @{mro::get_linear_isa($class)};
+    return @{mro::get_linear_isa( ref($_[0]) || $_[0] )};
 };
 
 1;
 
-=head1 Performance
+=head1 PERFORMANCE
 
 You can speed up accessors of type 'simple' by installing L<Class::XSAccessor>.
-Note however that the use of this module is disabled by default on Win32
-systems, as it causes yet unresolved segfaults. If you are a Win32 user, and
-want to try this module with L<Class::XSAccessor>, set
-C<$Class::Accessor::Grouped::hasXS> to a true value B<before> registering
-your accessors (e.g. in a C<BEGIN> block)
 
 =head1 AUTHORS
 
 Matt S. Trout <mst@shadowcatsystems.co.uk>
 Christopher H. Laco <claco@chrislaco.com>
 
-With contributions from:
+=head1 CONTRIBUTORS
 
-Guillermo Roditi <groditi@cpan.org>
+groditi: Guillermo Roditi <groditi@cpan.org>
+ribasushi: Peter Rabbitson <ribasushi@cpan.org>
+Jason Plum <jason.plum@bmmsi.com>
 
 =head1 COPYRIGHT & LICENSE
 
