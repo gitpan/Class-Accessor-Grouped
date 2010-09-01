@@ -33,7 +33,6 @@ t/lib/NotReallyAClass.pm
 t/lib/SuperInheritedGroups.pm
 t/manifest.t
 t/pod_coverage.t
-t/pod_spelling.t
 t/pod_syntax.t
 t/strict.t
 t/style_no_tabs.t

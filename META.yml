@@ -18,10 +18,6 @@ no_index:
   directory:
     - inc
     - t
-provides:
-  Class::Accessor::Grouped:
-    file: lib/Class/Accessor/Grouped.pm
-    version: 0.09004
 requires:
   Carp: 0
   Class::Inspector: 0
@@ -32,4 +28,4 @@ requires:
 resources:
   license: http://dev.perl.org/licenses/
   repository: http://dev.catalyst.perl.org/repos/bast/Class-Accessor-Grouped/trunk
-version: 0.09004
+version: 0.09005
