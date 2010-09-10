@@ -5,6 +5,8 @@ author:
 build_requires:
   ExtUtils::MakeMaker: 6.42
   Sub::Identify: 0
+  Test::Exception: 0
+  Test::More: 0.94
 configure_requires:
   ExtUtils::MakeMaker: 6.42
 distribution_type: module
@@ -28,4 +30,4 @@ requires:
 resources:
   license: http://dev.perl.org/licenses/
   repository: http://dev.catalyst.perl.org/repos/bast/Class-Accessor-Grouped/trunk
-version: 0.09005
+version: 0.09006

@@ -24,6 +24,7 @@ t/basic.t
 t/component.t
 t/inherited.t
 t/lib/AccessorGroups.pm
+t/lib/AccessorGroupsComp.pm
 t/lib/AccessorGroupsRO.pm
 t/lib/AccessorGroupsWO.pm
 t/lib/BaseInheritedGroups.pm

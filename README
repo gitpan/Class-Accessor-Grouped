@@ -42,25 +42,28 @@ METHODS
     value rather than getting the value.
 
   make_group_accessor
-    Arguments: $group, $field
-        Returns: $sub (\CODE)
+    Arguments: $group, $field, $method
+        Returns: \&accessor_coderef ?
 
-    Returns a single accessor in a given group; called by mk_group_accessors
-    for each entry in @fieldspec.
+    Called by mk_group_accessors for each entry in @fieldspec. Either
+    returns a coderef which will be installed at "&__PACKAGE__::$method", or
+    returns "undef" if it elects to install the coderef on its own.
 
   make_group_ro_accessor
-    Arguments: $group, $field
-        Returns: $sub (\CODE)
+    Arguments: $group, $field, $method
+        Returns: \&accessor_coderef ?
 
-    Returns a single read-only accessor in a given group; called by
-    mk_group_ro_accessors for each entry in @fieldspec.
+    Called by mk_group_ro_accessors for each entry in @fieldspec. Either
+    returns a coderef which will be installed at "&__PACKAGE__::$method", or
+    returns "undef" if it elects to install the coderef on its own.
 
   make_group_wo_accessor
-    Arguments: $group, $field
-        Returns: $sub (\CODE)
+    Arguments: $group, $field, $method
+        Returns: \&accessor_coderef ?
 
-    Returns a single write-only accessor in a given group; called by
-    mk_group_wo_accessors for each entry in @fieldspec.
+    Called by mk_group_wo_accessors for each entry in @fieldspec. Either
+    returns a coderef which will be installed at "&__PACKAGE__::$method", or
+    returns "undef" if it elects to install the coderef on its own.
 
   get_simple
     Arguments: $field
@@ -129,16 +132,56 @@ METHODS
     inherited from.
 
 PERFORMANCE
-    You can speed up accessors of type 'simple' by installing
-    Class::XSAccessor.
+    To provide total flexibility Class::Accessor::Grouped calls methods
+    internally while performing get/set actions, which makes it noticeably
+    slower than similar modules. To compensate, this module will
+    automatically use the insanely fast Class::XSAccessor to generate the
+    "simple"-group accessors, if Class::XSAccessor >= 1.06 is available on
+    your system.
+
+  Benchmark
+    This is the result of a set/get/set loop benchmark on perl 5.12.1 with
+    thread support, showcasing most popular accessor builders: Moose, Mouse,
+    CAF, CAF_XS and XSA:
+
+                Rate     CAG   moOse     CAF HANDMADE  CAF_XS moUse_XS CAG_XS     XSA
+     CAG      1777/s      --    -27%    -29%     -36%    -62%     -67%   -72%    -73%
+     moOse    2421/s     36%      --     -4%     -13%    -48%     -55%   -61%    -63%
+     CAF      2511/s     41%      4%      --     -10%    -47%     -53%   -60%    -61%
+     HANDMADE 2791/s     57%     15%     11%       --    -41%     -48%   -56%    -57%
+     CAF_XS   4699/s    164%     94%     87%      68%      --     -13%   -25%    -28%
+     moUse_XS 5375/s    203%    122%    114%      93%     14%       --   -14%    -18%
+     CAG_XS   6279/s    253%    159%    150%     125%     34%      17%     --     -4%
+     XSA      6515/s    267%    169%    159%     133%     39%      21%     4%      --
+
+    Benchmark program is available in the root of the <repository>:
+
+  Notes on Class::XSAccessor
+    While Class::XSAccessor works surprisingly well for the amount of black
+    magic it tries to pull off, it's still black magic. At present (Sep
+    2010) the module is known to have problems on Windows under heavy
+    thread-stress (e.g. Win32+Apache+mod_perl). Thus for the time being
+    Class::XSAccessor will not be used automatically if you are running
+    under "MSWin32".
+
+    You can force the use of Class::XSAccessor before creating a particular
+    "simple" accessor by either manipulating the global variable
+    $Class::Accessor::Grouped::USE_XS, or you can do so before runtime via
+    the "CAG_USE_XS" environment variable.
 
 AUTHORS
-    Matt S. Trout <mst@shadowcatsystems.co.uk> Christopher H. Laco
-    <claco@chrislaco.com>
+    Matt S. Trout <mst@shadowcatsystems.co.uk>
+
+    Christopher H. Laco <claco@chrislaco.com>
 
 CONTRIBUTORS
-    groditi: Guillermo Roditi <groditi@cpan.org> ribasushi: Peter Rabbitson
-    <ribasushi@cpan.org> Jason Plum <jason.plum@bmmsi.com>
+    Caelum: Rafael Kitover <rkitover@cpan.org>
+
+    groditi: Guillermo Roditi <groditi@cpan.org>
+
+    Jason Plum <jason.plum@bmmsi.com>
+
+    ribasushi: Peter Rabbitson <ribasushi@cpan.org>
 
 COPYRIGHT & LICENSE
     Copyright (c) 2006-2010 Matt S. Trout <mst@shadowcatsystems.co.uk>
