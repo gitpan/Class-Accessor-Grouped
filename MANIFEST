@@ -26,6 +26,7 @@ t/inherited.t
 t/lib/AccessorGroups.pm
 t/lib/AccessorGroupsComp.pm
 t/lib/AccessorGroupsRO.pm
+t/lib/AccessorGroupsSubclass.pm
 t/lib/AccessorGroupsWO.pm
 t/lib/BaseInheritedGroups.pm
 t/lib/ExtraInheritedGroups.pm

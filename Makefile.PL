@@ -1,4 +1,4 @@
-# $Id: /mirror/Class-Accessor-Grouped/trunk/Makefile.PL 9730 2010-09-10T17:46:30.340116Z rabbit  $
+# $Id: /mirror/Class-Accessor-Grouped/trunk/Makefile.PL 9763 2010-10-08T16:59:29.986835Z rabbit  $
 use strict;
 use warnings;
 use inc::Module::Install 1;
@@ -14,7 +14,6 @@ requires 'MRO::Compat';
 requires 'Class::Inspector';
 requires 'Sub::Name' => '0.04';
 
-test_requires 'Sub::Identify';
 test_requires 'Test::More' => '0.94';
 test_requires 'Test::Exception';
 

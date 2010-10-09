@@ -154,20 +154,31 @@ PERFORMANCE
      CAG_XS   6279/s    253%    159%    150%     125%     34%      17%     --     -4%
      XSA      6515/s    267%    169%    159%     133%     39%      21%     4%      --
 
-    Benchmark program is available in the root of the <repository>:
+    Benchmark program is available in the root of the repository
+    <http://search.cpan.org/dist/Class-Accessor-Grouped/>:
 
   Notes on Class::XSAccessor
+    You can force (or disable) the use of Class::XSAccessor before creating
+    a particular "simple" accessor by either manipulating the global
+    variable $Class::Accessor::Grouped::USE_XS to true or false (preferably
+    with localization, or you can do so before runtime via the "CAG_USE_XS"
+    environment variable.
+
+    Since Class::XSAccessor has no knowledge of "get_simple" and
+    "set_simple" this module does its best to detect if you are overriding
+    one of these methods and will fall back to using the perl version of the
+    accessor in order to maintain consistency. However be aware that if you
+    enable use of "Class::XSAccessor" (automatically or explicitly), create
+    an object, invoke a simple accessor on that object, and then manipulate
+    the symbol table to install a "get/set_simple" override - you get to
+    keep all the pieces.
+
     While Class::XSAccessor works surprisingly well for the amount of black
     magic it tries to pull off, it's still black magic. At present (Sep
     2010) the module is known to have problems on Windows under heavy
     thread-stress (e.g. Win32+Apache+mod_perl). Thus for the time being
     Class::XSAccessor will not be used automatically if you are running
     under "MSWin32".
-
-    You can force the use of Class::XSAccessor before creating a particular
-    "simple" accessor by either manipulating the global variable
-    $Class::Accessor::Grouped::USE_XS, or you can do so before runtime via
-    the "CAG_USE_XS" environment variable.
 
 AUTHORS
     Matt S. Trout <mst@shadowcatsystems.co.uk>

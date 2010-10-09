@@ -2,105 +2,96 @@ use Test::More tests => 62;
 use strict;
 use warnings;
 use lib 't/lib';
-use Sub::Identify qw/sub_name sub_fullname/;
+use B qw/svref_2object/;
 
 # we test the pure-perl versions only, but allow overrides
 # from the accessor_xs test-umbrella
 # Also make sure a rogue envvar will not interfere with
 # things
+my $use_xs;
 BEGIN {
     $Class::Accessor::Grouped::USE_XS = 0
         unless defined $Class::Accessor::Grouped::USE_XS;
     $ENV{CAG_USE_XS} = 1;
+    $use_xs = $Class::Accessor::Grouped::USE_XS;
 };
 
-use AccessorGroups;
-
-my $class = AccessorGroups->new;
+use AccessorGroupsSubclass;
 
 {
-    my $warned = 0;
+    my $obj = AccessorGroupsSubclass->new;
+    my $class = ref $obj;
+    my $name = 'multiple1';
+    my $alias = "_${name}_accessor";
 
+    for my $meth ($name, $alias) {
+        my $cv = svref_2object( $obj->can($meth) );
+        is($cv->GV->NAME, $meth, "$meth accessor is named");
+        is($cv->GV->STASH->NAME, 'AccessorGroups', "$meth class correct");
+    }
+
+    my $warned = 0;
     local $SIG{__WARN__} = sub {
         if  (shift =~ /DESTROY/i) {
             $warned++;
         };
     };
 
+    no warnings qw/once/;
+    local *AccessorGroupsSubclass::DESTROY = sub {};
+
     $class->mk_group_accessors('warnings', 'DESTROY');
-
     ok($warned);
-
-    # restore non-accessorized DESTROY
-    no warnings;
-    *AccessorGroups::DESTROY = sub {};
 };
 
-{
-  my $class_name = ref $class;
-  my $name = 'multiple1';
-  my $alias = "_${name}_accessor";
-  my $accessor = $class->can($name);
-  my $alias_accessor = $class->can($alias);
-  isnt(sub_name($accessor), '__ANON__', 'accessor is named');
-  isnt(sub_name($alias_accessor), '__ANON__', 'alias is named');
-  is(sub_fullname($accessor), join('::',$class_name,$name), 'accessor FQ name');
-  is(sub_fullname($alias_accessor), join('::',$class_name,$alias), 'alias FQ name');
-}
 
-foreach (qw/singlefield multiple1 multiple2/) {
-    my $name = $_;
-    my $alias = "_${name}_accessor";
+my $obj = AccessorGroupsSubclass->new;
 
-    can_ok($class, $name, $alias);
-
-    is($class->$name, undef);
-    is($class->$alias, undef);
-
-    # get/set via name
-    is($class->$name('a'), 'a');
-    is($class->$name, 'a');
-    is($class->{$name}, 'a');
-
-    # alias gets same as name
-    is($class->$alias, 'a');
-
-    # get/set via alias
-    is($class->$alias('b'), 'b');
-    is($class->$alias, 'b');
-    is($class->{$name}, 'b');
-
-    # alias gets same as name
-    is($class->$name, 'b');
+my $test_accessors = {
+    singlefield => {
+        is_xs => $use_xs,
+        has_extra => 1,
+    },
+    multiple1 => {
+    },
+    multiple2 => {
+    },
+    lr1name => {
+        custom_field => 'lr1;field',
+    },
+    lr2name => {
+        custom_field => "lr2'field",
+    },
 };
 
-foreach (qw/lr1 lr2/) {
-    my $name = "$_".'name';
+
+for my $name (sort keys %$test_accessors) {
     my $alias = "_${name}_accessor";
+    my $field = $test_accessors->{$name}{custom_field} || $name;
+    my $extra = $test_accessors->{$name}{has_extra};
 
-    my $field = { lr1 => 'lr1;field', lr2 => q{lr2'field} }->{$_};
+    can_ok($obj, $name, $alias);
+    ok(!$obj->can($field))
+      if $field ne $name;
 
-    can_ok($class, $name, $alias);
-    ok(!$class->can($field));
-
-    is($class->$name, undef);
-    is($class->$alias, undef);
+    is($obj->$name, undef);
+    is($obj->$alias, undef);
 
     # get/set via name
-    is($class->$name('c'), 'c');
-    is($class->$name, 'c');
-    is($class->{$field}, 'c');
+    is($obj->$name('a'), 'a');
+    is($obj->$name, 'a');
+    is($obj->{$field}, $extra ? 'a Extra tackled on' : 'a');
 
     # alias gets same as name
-    is($class->$alias, 'c');
+    is($obj->$alias, 'a');
 
     # get/set via alias
-    is($class->$alias('d'), 'd');
-    is($class->$alias, 'd');
-    is($class->{$field}, 'd');
+    is($obj->$alias('b'), 'b');
+    is($obj->$alias, 'b');
+    is($obj->{$field}, $extra ? 'b Extra tackled on' : 'b');
 
     # alias gets same as name
-    is($class->$name, 'd');
+    is($obj->$name, 'b');
 };
 
 # important

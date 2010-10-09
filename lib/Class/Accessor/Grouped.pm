@@ -6,7 +6,7 @@ use Scalar::Util ();
 use MRO::Compat;
 use Sub::Name ();
 
-our $VERSION = '0.09006';
+our $VERSION = '0.09007';
 $VERSION = eval $VERSION;
 
 # when changing minimum version don't forget to adjust L</PERFROMANCE> as well
@@ -18,7 +18,7 @@ our $USE_XS;
 $USE_XS = $ENV{CAG_USE_XS}
     unless defined $USE_XS;
 
-my $xsa_loaded;
+my ($xsa_loaded, $xsa_autodetected);
 
 my $load_xsa = sub {
     return if $xsa_loaded++;
@@ -32,6 +32,7 @@ my $use_xs = sub {
         return $USE_XS;
     }
 
+    $xsa_autodetected = 1;
     $USE_XS = 0;
 
     # Class::XSAccessor is segfaulting on win32, in some
@@ -44,6 +45,132 @@ my $use_xs = sub {
 
     return $USE_XS;
 };
+
+my $maker_type_map = {
+  rw => {
+    xsa => 'accessors',
+    cag => 'make_group_accessor',
+  },
+  ro => {
+    xsa => 'getters',
+    cag => 'make_group_ro_accessor',
+  },
+  wo => {
+    xsa => 'setters',
+    cag => 'make_group_wo_accessor',
+  },
+};
+
+# When installing an XSA simple accessor, we need to make sure we are not
+# short-circuiting a (compile or runtime) get_simple/set_simple override.
+# What we do here is install a lazy first-access check, which will decide
+# the ultimate coderef being placed in the accessor slot
+
+my $no_xsa_classes_warned;
+my $add_xs_accessor = sub {
+    my ($class, $group, $field, $name, $type) = @_;
+
+    Class::XSAccessor->import({
+        replace => 1,
+        class => $class,
+        $maker_type_map->{$type}{xsa} => {
+            $name => $field,
+        },
+    });
+
+    my $xs_cref = $class->can($name);
+
+    my $pp_cref = do {
+        my $cag_method = $maker_type_map->{$type}{cag};
+        local $USE_XS = 0;
+        $class->$cag_method ($group, $field, $name, $type);
+    };
+
+    # can't use pkg_gen to track this stuff, as it doesn't
+    # detect superclass mucking
+    my $original_getter = __PACKAGE__->can ("get_$group");
+    my $original_setter = __PACKAGE__->can ("set_$group");
+
+    return sub {
+        my $self = $_[0];
+        my $current_class = Scalar::Util::blessed( $self ) || $self;
+
+        my $final_cref;
+        if (
+            $current_class->can("get_$group") == $original_getter
+                &&
+            $current_class->can("set_$group") == $original_setter
+        ) {
+            # nothing has changed, might as well use the XS crefs
+            #
+            # note that by the time this code executes, we already have
+            # *objects* (since XSA works on 'simple' only by definition).
+            # If someone is mucking with the symbol table *after* there
+            # are some objects already - look! many, shiny pieces! :)
+            $final_cref = $xs_cref;
+        }
+        else {
+            $final_cref = $pp_cref;
+            if ($USE_XS and ! $xsa_autodetected and ! $no_xsa_classes_warned->{$current_class}++) {
+
+                # not using Carp since the line where this happens doesn't mean much
+                warn 'Explicitly requested use of Class::XSAccessor disabled for objects of class '
+                   . "'$current_class' due to an overriden get_$group and/or set_$group\n";
+            }
+        }
+
+        # installing an XSA cref that was originally created on a class
+        # different than $current_class is perfectly safe as per
+        # C::XSA's author
+        my $fq_meth = "${current_class}::${name}";
+
+        no strict qw/refs/;
+        no warnings qw/redefine/;
+
+        *$fq_meth = Sub::Name::subname($fq_meth, $final_cref);
+
+        goto $final_cref;
+    };
+};
+
+my $install_group_accessors = sub {
+    my($self, $maker, $group, @fields) = @_;
+    my $class = Scalar::Util::blessed $self || $self;
+
+    no strict 'refs';
+    no warnings 'redefine';
+
+    # So we don't have to do lots of lookups inside the loop.
+    $maker = $self->can($maker) unless ref $maker eq 'CODE';
+
+    foreach (@fields) {
+        if( $_ eq 'DESTROY' ) {
+            Carp::carp("Having a data accessor named DESTROY in ".
+                       "'$class' is unwise.");
+        }
+
+        my ($name, $field) = (ref $_)
+            ? (@$_)
+            : ($_, $_)
+        ;
+
+        my $alias = "_${name}_accessor";
+
+        for my $meth ($name, $alias) {
+
+            # the maker may elect to not return anything, meaning it already
+            # installed the coderef for us
+            my $cref = $self->$maker($group, $field, $meth)
+                or next;
+
+            my $fq_meth = join('::', $class, $meth);
+
+            *$fq_meth = Sub::Name::subname($fq_meth, $cref);
+                #unless defined &{$class."\:\:$field"}
+        }
+    }
+};
+
 
 =head1 NAME
 
@@ -86,49 +213,8 @@ be of the form [ $accessor, $field ].
 sub mk_group_accessors {
   my ($self, $group, @fields) = @_;
 
-  $self->_mk_group_accessors('make_group_accessor', $group, @fields);
+  $self->$install_group_accessors('make_group_accessor', $group, @fields);
   return;
-}
-
-
-{
-    no strict 'refs';
-    no warnings 'redefine';
-
-    sub _mk_group_accessors {
-        my($self, $maker, $group, @fields) = @_;
-        my $class = Scalar::Util::blessed $self || $self;
-
-        # So we don't have to do lots of lookups inside the loop.
-        $maker = $self->can($maker) unless ref $maker;
-
-        foreach (@fields) {
-            if( $_ eq 'DESTROY' ) {
-                Carp::carp("Having a data accessor named DESTROY  in ".
-                             "'$class' is unwise.");
-            }
-
-            my ($name, $field) = (ref $_)
-                ? (@$_)
-                : ($_, $_)
-            ;
-
-            my $alias = "_${name}_accessor";
-
-            for my $meth ($name, $alias) {
-
-                # the maker may elect to not return anything, meaning it already
-                # installed the coderef for us
-                my $cref = $self->$maker($group, $field, $meth)
-                    or next;
-
-                my $fq_meth = join('::', $class, $meth);
-
-                *$fq_meth = Sub::Name::subname($fq_meth, $cref);
-                    #unless defined &{$class."\:\:$field"}
-            }
-        }
-    }
 }
 
 =head2 mk_group_ro_accessors
@@ -150,7 +236,7 @@ rather than setting the value.
 sub mk_group_ro_accessors {
     my($self, $group, @fields) = @_;
 
-    $self->_mk_group_accessors('make_group_ro_accessor', $group, @fields);
+    $self->$install_group_accessors('make_group_ro_accessor', $group, @fields);
 }
 
 =head2 mk_group_wo_accessors
@@ -172,7 +258,7 @@ value rather than getting the value.
 sub mk_group_wo_accessors {
     my($self, $group, @fields) = @_;
 
-    $self->_mk_group_accessors('make_group_wo_accessor', $group, @fields);
+    $self->$install_group_accessors('make_group_wo_accessor', $group, @fields);
 }
 
 =head2 make_group_accessor
@@ -195,14 +281,7 @@ sub make_group_accessor {
     my ($class, $group, $field, $name) = @_;
 
     if ( $group eq 'simple' && $use_xs->() ) {
-        Class::XSAccessor->import({
-            replace => 1,
-            class => $class,
-            accessors => {
-                $name => $field,
-            },
-        });
-        return;
+        return $add_xs_accessor->(@_, 'rw');
     }
 
     my $set = "set_$group";
@@ -244,14 +323,7 @@ sub make_group_ro_accessor {
     my($class, $group, $field, $name) = @_;
 
     if ( $group eq 'simple' && $use_xs->() ) {
-        Class::XSAccessor->import({
-            replace => 1,
-            class => $class,
-            getters => {
-                $name => $field,
-            },
-        });
-        return;
+        return $add_xs_accessor->(@_, 'ro');
     }
 
     my $get = "get_$group";
@@ -293,14 +365,7 @@ sub make_group_wo_accessor {
     my($class, $group, $field, $name) = @_;
 
     if ( $group eq 'simple' && $use_xs->() ) {
-        Class::XSAccessor->import({
-            replace => 1,
-            class => $class,
-            setters => {
-                $name => $field,
-            },
-        });
-        return;
+        return $add_xs_accessor->(@_, 'wo')
     }
 
     my $set = "set_$group";
@@ -382,7 +447,7 @@ instances.
 sub get_inherited {
     my $class;
 
-    if ( ($class = ref $_[0]) && Scalar::Util::blessed $_[0]) {
+    if ( defined( $class = Scalar::Util::blessed $_[0] ) ) {
         if (Scalar::Util::reftype $_[0] eq 'HASH') {
           return $_[0]->{$_[1]} if exists $_[0]->{$_[1]};
         }
@@ -395,7 +460,7 @@ sub get_inherited {
     }
 
     no strict 'refs';
-    no warnings qw/uninitialized/;
+    no warnings 'uninitialized';
 
     my $cag_slot = '::__cag_'. $_[1];
     return ${$class.$cag_slot} if defined(${$class.$cag_slot});
@@ -435,7 +500,7 @@ hash-based object.
 =cut
 
 sub set_inherited {
-    if (Scalar::Util::blessed $_[0]) {
+    if (defined Scalar::Util::blessed $_[0]) {
         if (Scalar::Util::reftype $_[0] eq 'HASH') {
             return $_[0]->{$_[1]} = $_[2];
         } else {
@@ -550,16 +615,26 @@ L<repository|http://search.cpan.org/dist/Class-Accessor-Grouped/>:
 
 =head2 Notes on Class::XSAccessor
 
+You can force (or disable) the use of L<Class::XSAccessor> before creating a
+particular C<simple> accessor by either manipulating the global variable
+C<$Class::Accessor::Grouped::USE_XS> to true or false (preferably with
+L<localization|perlfunc/local>, or you can do so before runtime via the
+C<CAG_USE_XS> environment variable.
+
+Since L<Class::XSAccessor> has no knowledge of L</get_simple> and
+L</set_simple> this module does its best to detect if you are overriding
+one of these methods and will fall back to using the perl version of the
+accessor in order to maintain consistency. However be aware that if you
+enable use of C<Class::XSAccessor> (automatically or explicitly), create
+an object, invoke a simple accessor on that object, and B<then> manipulate
+the symbol table to install a C<get/set_simple> override - you get to keep
+all the pieces.
+
 While L<Class::XSAccessor> works surprisingly well for the amount of black
 magic it tries to pull off, it's still black magic. At present (Sep 2010)
 the module is known to have problems on Windows under heavy thread-stress
 (e.g. Win32+Apache+mod_perl). Thus for the time being L<Class::XSAccessor>
 will not be used automatically if you are running under C<MSWin32>.
-
-You can force the use of L<Class::XSAccessor> before creating a particular
-C<simple> accessor by either manipulating the global variable
-C<$Class::Accessor::Grouped::USE_XS>, or you can do so before runtime via the
-C<CAG_USE_XS> environment variable.
 
 =head1 AUTHORS
 
