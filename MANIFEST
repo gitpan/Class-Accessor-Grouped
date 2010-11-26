@@ -17,6 +17,7 @@ MANIFEST.SKIP
 META.yml
 README
 t/accessors.t
+t/accessors_pp.t
 t/accessors_ro.t
 t/accessors_wo.t
 t/accessors_xs.t
