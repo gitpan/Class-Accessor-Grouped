@@ -21,6 +21,7 @@ t/accessors_pp.t
 t/accessors_ro.t
 t/accessors_wo.t
 t/accessors_xs.t
+t/accessors_xs_cachedwarn.t
 t/basic.t
 t/component.t
 t/inherited.t

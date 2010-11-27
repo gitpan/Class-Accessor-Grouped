@@ -5,8 +5,8 @@ use Carp ();
 use Scalar::Util ();
 use MRO::Compat;
 
-our $VERSION = '0.09009';
-$VERSION = eval $VERSION;
+our $VERSION = '0.10000';
+$VERSION = eval $VERSION if $VERSION =~ /_/; # numify for warning-free dev releases
 
 # when changing minimum version don't forget to adjust L</PERFORMANCE> and
 # the Makefile.PL as well
@@ -417,18 +417,22 @@ available on your system.
 
 This is the result of a set/get/set loop benchmark on perl 5.12.1 with
 thread support, showcasing most popular accessor builders: L<Moose>, L<Mouse>,
-L<CAF|Class::Accessor::Fast>, L<CAF_XS|Class::Accessor::Fast::XS>
-and L<XSA|Class::XSAccessor>:
+L<Moo>, L<CAF|Class::Accessor::Fast>, L<CAF_XS|Class::Accessor::Fast::XS>,
+L<XSA|Class::XSAccessor>, and L<CAF_XSA|Class::XSAccessor::Compat>:
 
-            Rate     CAG   moOse     CAF HANDMADE  CAF_XS moUse_XS CAG_XS     XSA
- CAG      1777/s      --    -27%    -29%     -36%    -62%     -67%   -72%    -73%
- moOse    2421/s     36%      --     -4%     -13%    -48%     -55%   -61%    -63%
- CAF      2511/s     41%      4%      --     -10%    -47%     -53%   -60%    -61%
- HANDMADE 2791/s     57%     15%     11%       --    -41%     -48%   -56%    -57%
- CAF_XS   4699/s    164%     94%     87%      68%      --     -13%   -25%    -28%
- moUse_XS 5375/s    203%    122%    114%      93%     14%       --   -14%    -18%
- CAG_XS   6279/s    253%    159%    150%     125%     34%      17%     --     -4%
- XSA      6515/s    267%    169%    159%     133%     39%      21%     4%      --
+           Rate  CAG moOse  CAF moUse  moo HANDMADE CAF_XS moUse_XS moo_XS CAF_XSA  XSA CAG_XS
+ CAG      169/s   --  -21% -24%  -32% -32%     -34%   -59%     -63%   -67%    -67% -67%   -67%
+ moOse    215/s  27%    --  -3%  -13% -13%     -15%   -48%     -53%   -58%    -58% -58%   -58%
+ CAF      222/s  31%    3%   --  -10% -10%     -13%   -46%     -52%   -57%    -57% -57%   -57%
+ moUse    248/s  46%   15%  11%    --  -0%      -3%   -40%     -46%   -52%    -52% -52%   -52%
+ moo      248/s  46%   15%  11%    0%   --      -3%   -40%     -46%   -52%    -52% -52%   -52%
+ HANDMADE 255/s  50%   18%  14%    3%   3%       --   -38%     -45%   -50%    -51% -51%   -51%
+ CAF_XS   411/s 143%   91%  85%   66%  66%      61%     --     -11%   -20%    -20% -21%   -21%
+ moUse_XS 461/s 172%  114% 107%   86%  86%      81%    12%       --   -10%    -11% -11%   -11%
+ moo_XS   514/s 204%  139% 131%  107% 107%     102%    25%      12%     --     -0%  -1%    -1%
+ CAF_XSA  516/s 205%  140% 132%  108% 108%     103%    26%      12%     0%      --  -0%    -0%
+ XSA      519/s 206%  141% 133%  109% 109%     104%    26%      13%     1%      0%   --    -0%
+ CAG_XS   519/s 206%  141% 133%  109% 109%     104%    26%      13%     1%      0%   0%     --
 
 Benchmark program is available in the root of the
 L<repository|http://search.cpan.org/dist/Class-Accessor-Grouped/>:
@@ -537,6 +541,15 @@ BEGIN {
     ? sub () { 1 }
     : sub () { 0 }
   ;
+
+
+  *__CAG_TRACK_UNDEFER_FAIL = (
+    $INC{'Test/Builder.pm'} || $INC{'Test/Builder2.pm'}
+      and
+    $0 =~ m|^ x?t / .+ \.t $|x
+  ) ? sub () { 1 }
+    : sub () { 0 }
+  ;
 }
 
 # Autodetect unless flag supplied
@@ -559,7 +572,7 @@ my $maker_templates = {
       $field =~ s/'/\\'/g;
 
       "
-        \@_ > 1
+        \@_ != 1
           ? shift->$set('$field', \@_)
           : shift->$get('$field')
       "
@@ -592,7 +605,7 @@ my $maker_templates = {
       $field =~ s/'/\\'/g;
 
       "
-        \@_ > 1
+        \@_ != 1
           ? shift->$set('$field', \@_)
           : do {
             my \$caller = caller;
@@ -616,7 +629,7 @@ my $original_simple_setter = __PACKAGE__->can ('set_simple');
 # Note!!! Unusual signature
 $gen_accessor = sub {
   my ($type, $class, $group, $field, $methname) = @_;
-  if (my $c = ref $class) {
+  if (my $c = Scalar::Util::blessed( $class )) {
     $class = $c;
   }
 
@@ -633,8 +646,26 @@ $gen_accessor = sub {
     die sprintf( "Class::XSAccessor requested but not available:\n%s\n", __CAG_NO_CXSA )
       if __CAG_NO_CXSA;
 
+    my %deferred_calls_seen;
+
     return sub {
       my $current_class = Scalar::Util::blessed( $_[0] ) || $_[0];
+
+      if (__CAG_TRACK_UNDEFER_FAIL) {
+        my @cframe = caller(0);
+        if ($deferred_calls_seen{$current_class}{$cframe[3]}) {
+          Carp::carp (
+            "Deferred version of method $cframe[3] invoked more than once (originally "
+          . "invoked at $deferred_calls_seen{$current_class}{$cframe[3]}). This is a strong "
+          . 'indication your code has cached the original ->can derived method coderef, '
+          . 'and is using it instead of the proper method re-lookup, causing performance '
+          . 'regressions'
+          );
+        }
+        else {
+          $deferred_calls_seen{$current_class}{$cframe[3]} = "$cframe[1] line $cframe[2]";
+        }
+      }
 
       if (
         $current_class->can('get_simple') == $original_simple_getter
@@ -663,7 +694,8 @@ $gen_accessor = sub {
             . "set_simple\n";
         }
 
-        no strict qw/refs/;
+        no strict 'refs';
+        no warnings 'redefine';
 
         my $fq_name = "${current_class}::${methname}";
         *$fq_name = Sub::Name::subname($fq_name, do {
@@ -690,14 +722,14 @@ $gen_accessor = sub {
 
     no warnings 'redefine';
     local $@ if __CAG_UNSTABLE_DOLLARAT;
-    eval "sub ${class}::${methname}{$src}";
+    eval "sub ${class}::${methname} { $src }";
 
-    undef;  # so that no attempt will be made to install anything
+    undef;  # so that no further attempt will be made to install anything
   }
 
   # a coderef generator with a variable pad (returns a fresh cref on every invocation)
   else {
-    ($accessor_maker_cache->{pp}{$group}{$field}{$type} ||= do {
+    ($accessor_maker_cache->{pp}{$type}{$group}{$field} ||= do {
       my $src = $accessor_maker_cache->{source}{$type}{$group}{$field} ||=
         $maker_templates->{$type}{pp_code}->($group, $field);
 
