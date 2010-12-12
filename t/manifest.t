@@ -1,5 +1,5 @@
 #!perl -wT
-# $Id: /mirror/Class-Accessor-Grouped/trunk/t/manifest.t 5160 2008-11-18T02:10:02.602151Z claco  $
+# $Id: /bast/Class-Accessor-Grouped/trunk/t/manifest.t 5160 2008-11-18T02:10:02.602151Z claco  $
 use strict;
 use warnings;
 

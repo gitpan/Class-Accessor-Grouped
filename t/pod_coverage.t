@@ -1,5 +1,5 @@
 #!perl -wT
-# $Id: /mirror/Class-Accessor-Grouped/trunk/t/pod_coverage.t 3253 2007-05-06T02:24:39.381139Z claco  $
+# $Id: /bast/Class-Accessor-Grouped/trunk/t/pod_coverage.t 3253 2007-05-06T02:24:39.381139Z claco  $
 use strict;
 use warnings;
 

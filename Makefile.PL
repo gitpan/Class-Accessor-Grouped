@@ -1,4 +1,4 @@
-# $Id: /mirror/Class-Accessor-Grouped/trunk/Makefile.PL 9808 2010-11-25T14:22:50.865930Z rabbit  $
+# $Id: /bast/Class-Accessor-Grouped/trunk/Makefile.PL 25265 2010-11-25T14:22:45.550671Z ribasushi  $
 use strict;
 use warnings;
 use inc::Module::Install 1;
