@@ -136,8 +136,7 @@ PERFORMANCE
     internally while performing get/set actions, which makes it noticeably
     slower than similar modules. To compensate, this module will
     automatically use the insanely fast Class::XSAccessor to generate the
-    "simple"-group accessors, if Class::XSAccessor >= 1.06 is available on
-    your system.
+    "simple"-group accessors if this module is available on your system.
 
   Benchmark
     This is the result of a set/get/set loop benchmark on perl 5.12.1 with
@@ -176,13 +175,6 @@ PERFORMANCE
     an object, invoke a simple accessor on that object, and then manipulate
     the symbol table to install a "get/set_simple" override - you get to
     keep all the pieces.
-
-    While Class::XSAccessor works surprisingly well for the amount of black
-    magic it tries to pull off, it's still black magic. At present (Sep
-    2010) the module is known to have problems on Windows under heavy
-    thread-stress (e.g. Win32+Apache+mod_perl). Thus for the time being
-    Class::XSAccessor will not be used automatically if you are running
-    under "MSWin32".
 
 AUTHORS
     Matt S. Trout <mst@shadowcatsystems.co.uk>

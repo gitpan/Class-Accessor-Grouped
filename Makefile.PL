@@ -1,4 +1,4 @@
-# $Id: /bast/Class-Accessor-Grouped/trunk/Makefile.PL 25265 2010-11-25T14:22:45.550671Z ribasushi  $
+# $Id: /bast/Class-Accessor-Grouped/trunk/Makefile.PL 25394 2010-12-19T01:15:39.532979Z ribasushi  $
 use strict;
 use warnings;
 use inc::Module::Install 1;
@@ -16,8 +16,8 @@ requires 'Class::Inspector';
 if (can_cc or $Module::Install::AUTHOR) {
   requires 'Sub::Name' => '0.05';
 
-  requires 'Class::XSAccessor' => '1.06'
-    if ($^O ne 'MSWin32' and $] > '5.008');
+  requires 'Class::XSAccessor' => '1.11'
+    if $] > '5.008';
 }
 
 test_requires 'Test::More' => '0.94';
