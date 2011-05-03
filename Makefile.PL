@@ -1,4 +1,4 @@
-# $Id: /bast/Class-Accessor-Grouped/trunk/Makefile.PL 25394 2010-12-19T01:15:39.532979Z ribasushi  $
+# $Id$
 use strict;
 use warnings;
 use inc::Module::Install 1;
@@ -10,7 +10,7 @@ all_from 'lib/Class/Accessor/Grouped.pm';
 
 requires 'Carp';
 requires 'Scalar::Util';
-requires 'MRO::Compat';
+requires 'MRO::Compat' if $] < 5.009_005;
 requires 'Class::Inspector';
 
 if (can_cc or $Module::Install::AUTHOR) {
@@ -32,14 +32,12 @@ if (-e 'MANIFEST.SKIP') {
 
 auto_install;
 
-resources repository =>
-'http://dev.catalyst.perl.org/repos/bast/Class-Accessor-Grouped/trunk';
+resources repository => 'git://git.shadowcat.co.uk/p5sagit/Class-Accessor-Grouped.git';
 
 WriteAll;
-use Data::Dumper;
 if ($Module::Install::AUTHOR) {
   @{Meta->{values}{requires}} = grep
-    { $_->[0] !~ /^ (?: Class\:\:XSAccessor | Sub\:\:Name ) $/x }
+    { $_->[0] !~ /^ (?: Class\:\:XSAccessor | Sub\:\:Name | MRO\:\:Compat ) $/x }
     @{Meta->{values}{requires}}
   ;
   print "Regenerating META with XS requires excluded\n";

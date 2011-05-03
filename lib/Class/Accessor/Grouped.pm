@@ -3,9 +3,17 @@ use strict;
 use warnings;
 use Carp ();
 use Scalar::Util ();
-use MRO::Compat;
 
-our $VERSION = '0.10002';
+BEGIN {
+  if ($] < 5.009_005) {
+    require MRO::Compat;
+  }
+  else {
+    require mro;
+  }
+}
+
+our $VERSION = '0.10003';
 $VERSION = eval $VERSION if $VERSION =~ /_/; # numify for warning-free dev releases
 
 # when changing minimum version don't forget to adjust L</PERFORMANCE> and
@@ -72,6 +80,14 @@ Class::Accessor::Grouped - Lets you build groups of accessors
 
 =head1 SYNOPSIS
 
+ use base 'Class::Accessor::Grouped';
+
+ # make basic accessors for objects
+ __PACKAGE__->mk_group_accessors(simple => qw(id name email));
+
+ # make accessor that works for objects and classes
+ __PACKAGE__->mk_group_accessors(inherited => 'awesome_level');
+
 =head1 DESCRIPTION
 
 This class lets you build groups of accessors that will call different
@@ -80,6 +96,8 @@ getters and setters.
 =head1 METHODS
 
 =head2 mk_group_accessors
+
+ __PACKAGE__->mk_group_accessors(simple => 'hair_length');
 
 =over 4
 
@@ -113,6 +131,8 @@ sub mk_group_accessors {
 
 =head2 mk_group_ro_accessors
 
+ __PACKAGE__->mk_group_ro_accessors(simple => 'birthdate');
+
 =over 4
 
 =item Arguments: $group, @fieldspec
@@ -134,6 +154,8 @@ sub mk_group_ro_accessors {
 }
 
 =head2 mk_group_wo_accessors
+
+ __PACKAGE__->mk_group_wo_accessors(simple => 'lie');
 
 =over 4
 
@@ -157,6 +179,8 @@ sub mk_group_wo_accessors {
 
 =head2 make_group_accessor
 
+ __PACKAGE__->make_group_accessor(simple => 'hair_length', 'hair_length');
+
 =over 4
 
 =item Arguments: $group, $field, $method
@@ -175,6 +199,8 @@ sub make_group_accessor { $gen_accessor->('rw', @_) }
 
 =head2 make_group_ro_accessor
 
+ __PACKAGE__->make_group_ro_accessor(simple => 'birthdate', 'birthdate');
+
 =over 4
 
 =item Arguments: $group, $field, $method
@@ -192,6 +218,8 @@ C<undef> if it elects to install the coderef on its own.
 sub make_group_ro_accessor { $gen_accessor->('ro', @_) }
 
 =head2 make_group_wo_accessor
+
+ __PACKAGE__->make_group_wo_accessor(simple => 'lie', 'lie');
 
 =over 4
 
@@ -462,6 +490,8 @@ Christopher H. Laco <claco@chrislaco.com>
 =head1 CONTRIBUTORS
 
 Caelum: Rafael Kitover <rkitover@cpan.org>
+
+frew: Arthur Axel "fREW" Schmidt <frioux@gmail.com>
 
 groditi: Guillermo Roditi <groditi@cpan.org>
 

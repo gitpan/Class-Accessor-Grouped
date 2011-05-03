@@ -2,12 +2,22 @@ NAME
     Class::Accessor::Grouped - Lets you build groups of accessors
 
 SYNOPSIS
+     use base 'Class::Accessor::Grouped';
+
+     # make basic accessors for objects
+     __PACKAGE__->mk_group_accessors(simple => qw(id name email));
+
+     # make accessor that works for objects and classes
+     __PACKAGE__->mk_group_accessors(inherited => 'awesome_level');
+
 DESCRIPTION
     This class lets you build groups of accessors that will call different
     getters and setters.
 
 METHODS
   mk_group_accessors
+     __PACKAGE__->mk_group_accessors(simple => 'hair_length');
+
     Arguments: $group, @fieldspec
         Returns: none
 
@@ -26,6 +36,8 @@ METHODS
     expected to be of the form [ $accessor, $field ].
 
   mk_group_ro_accessors
+     __PACKAGE__->mk_group_ro_accessors(simple => 'birthdate');
+
     Arguments: $group, @fieldspec
         Returns: none
 
@@ -34,6 +46,8 @@ METHODS
     rather than setting the value.
 
   mk_group_wo_accessors
+     __PACKAGE__->mk_group_wo_accessors(simple => 'lie');
+
     Arguments: $group, @fieldspec
         Returns: none
 
@@ -42,6 +56,8 @@ METHODS
     value rather than getting the value.
 
   make_group_accessor
+     __PACKAGE__->make_group_accessor(simple => 'hair_length', 'hair_length');
+
     Arguments: $group, $field, $method
         Returns: \&accessor_coderef ?
 
@@ -50,6 +66,8 @@ METHODS
     returns "undef" if it elects to install the coderef on its own.
 
   make_group_ro_accessor
+     __PACKAGE__->make_group_ro_accessor(simple => 'birthdate', 'birthdate');
+
     Arguments: $group, $field, $method
         Returns: \&accessor_coderef ?
 
@@ -58,6 +76,8 @@ METHODS
     returns "undef" if it elects to install the coderef on its own.
 
   make_group_wo_accessor
+     __PACKAGE__->make_group_wo_accessor(simple => 'lie', 'lie');
+
     Arguments: $group, $field, $method
         Returns: \&accessor_coderef ?
 
@@ -183,6 +203,8 @@ AUTHORS
 
 CONTRIBUTORS
     Caelum: Rafael Kitover <rkitover@cpan.org>
+
+    frew: Arthur Axel "fREW" Schmidt <frioux@gmail.com>
 
     groditi: Guillermo Roditi <groditi@cpan.org>
 
