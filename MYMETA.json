@@ -1,0 +1,48 @@
+{
+   "abstract" : "Lets you build groups of accessors",
+   "author" : [
+      "Matt S. Trout <mst@shadowcatsystems.co.uk>"
+   ],
+   "dynamic_config" : 0,
+   "generated_by" : "ExtUtils::MakeMaker version 6.6302, CPAN::Meta::Converter version 2.112621",
+   "license" : [
+      "perl_5"
+   ],
+   "meta-spec" : {
+      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "version" : "2"
+   },
+   "name" : "Class-Accessor-Grouped",
+   "no_index" : {
+      "directory" : [
+         "t",
+         "inc"
+      ]
+   },
+   "prereqs" : {
+      "build" : {
+         "requires" : {
+            "ExtUtils::MakeMaker" : "6.6302",
+            "Test::Exception" : "0.31",
+            "Test::More" : "0.94"
+         }
+      },
+      "configure" : {
+         "requires" : {
+            "ExtUtils::MakeMaker" : 0
+         }
+      },
+      "runtime" : {
+         "requires" : {
+            "Carp" : 0,
+            "Class::Inspector" : 0,
+            "Class::XSAccessor" : "1.11",
+            "Scalar::Util" : 0,
+            "Sub::Name" : "0.05",
+            "perl" : "5.006002"
+         }
+      }
+   },
+   "release_status" : "stable",
+   "version" : "0.10004"
+}

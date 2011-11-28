@@ -7,10 +7,9 @@ build_requires:
   Test::Exception: 0.31
   Test::More: 0.94
 configure_requires:
-  ExtUtils::MakeMaker: 6.6302
-distribution_type: module
-dynamic_config: 1
-generated_by: 'Module::Install version 1.04'
+  ExtUtils::MakeMaker: 0
+dynamic_config: 0
+generated_by: 'ExtUtils::MakeMaker version 6.6302, CPAN::Meta::Converter version 2.112621'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -18,14 +17,13 @@ meta-spec:
 name: Class-Accessor-Grouped
 no_index:
   directory:
-    - inc
     - t
+    - inc
 requires:
   Carp: 0
   Class::Inspector: 0
+  Class::XSAccessor: 1.11
   Scalar::Util: 0
-  perl: 5.6.2
-resources:
-  license: http://dev.perl.org/licenses/
-  repository: git://git.shadowcat.co.uk/p5sagit/Class-Accessor-Grouped.git
+  Sub::Name: 0.05
+  perl: 5.006002
 version: 0.10004

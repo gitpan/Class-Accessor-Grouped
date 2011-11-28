@@ -16,7 +16,7 @@ DESCRIPTION
 
 METHODS
   mk_group_accessors
-     __PACKAGE__->mk_group_accessors(simple => 'hair_length');
+     __PACKAGE__->mk_group_accessors(simple => 'hair_length', [ hair_color => 'hc' ]);
 
     Arguments: $group, @fieldspec
         Returns: none
@@ -36,7 +36,7 @@ METHODS
     expected to be of the form [ $accessor, $field ].
 
   mk_group_ro_accessors
-     __PACKAGE__->mk_group_ro_accessors(simple => 'birthdate');
+     __PACKAGE__->mk_group_ro_accessors(simple => 'birthdate', [ social_security_number => 'ssn' ]);
 
     Arguments: $group, @fieldspec
         Returns: none
@@ -46,7 +46,7 @@ METHODS
     rather than setting the value.
 
   mk_group_wo_accessors
-     __PACKAGE__->mk_group_wo_accessors(simple => 'lie');
+     __PACKAGE__->mk_group_wo_accessors(simple => 'lie', [ subject => 'subj' ]);
 
     Arguments: $group, @fieldspec
         Returns: none
@@ -54,36 +54,6 @@ METHODS
     Creates a set of write only accessors in a given group. Identical to
     "mk_group_accessors" but accessors will throw an error if not passed a
     value rather than getting the value.
-
-  make_group_accessor
-     __PACKAGE__->make_group_accessor(simple => 'hair_length', 'hair_length');
-
-    Arguments: $group, $field, $method
-        Returns: \&accessor_coderef ?
-
-    Called by mk_group_accessors for each entry in @fieldspec. Either
-    returns a coderef which will be installed at "&__PACKAGE__::$method", or
-    returns "undef" if it elects to install the coderef on its own.
-
-  make_group_ro_accessor
-     __PACKAGE__->make_group_ro_accessor(simple => 'birthdate', 'birthdate');
-
-    Arguments: $group, $field, $method
-        Returns: \&accessor_coderef ?
-
-    Called by mk_group_ro_accessors for each entry in @fieldspec. Either
-    returns a coderef which will be installed at "&__PACKAGE__::$method", or
-    returns "undef" if it elects to install the coderef on its own.
-
-  make_group_wo_accessor
-     __PACKAGE__->make_group_wo_accessor(simple => 'lie', 'lie');
-
-    Arguments: $group, $field, $method
-        Returns: \&accessor_coderef ?
-
-    Called by mk_group_wo_accessors for each entry in @fieldspec. Either
-    returns a coderef which will be installed at "&__PACKAGE__::$method", or
-    returns "undef" if it elects to install the coderef on its own.
 
   get_simple
     Arguments: $field
@@ -147,9 +117,47 @@ METHODS
 
         $self->result_class->method();
 
+INTERNAL METHODS
+    These methods are documented for clarity, but are never meant to be
+    called directly, and are not really meant for overriding either.
+
   get_super_paths
     Returns a list of 'parent' or 'super' class names that the current class
-    inherited from.
+    inherited from. This is what drives the traversal done by
+    "get_inherited".
+
+  make_group_accessor
+     __PACKAGE__->make_group_accessor('simple', 'hair_length', 'hair_length');
+     __PACKAGE__->make_group_accessor('simple', 'hc', 'hair_color');
+
+    Arguments: $group, $field, $accessor
+        Returns: \&accessor_coderef ?
+
+    Called by mk_group_accessors for each entry in @fieldspec. Either
+    returns a coderef which will be installed at "&__PACKAGE__::$accessor",
+    or returns "undef" if it elects to install the coderef on its own.
+
+  make_group_ro_accessor
+     __PACKAGE__->make_group_ro_accessor('simple', 'birthdate', 'birthdate');
+     __PACKAGE__->make_group_ro_accessor('simple', 'ssn', 'social_security_number');
+
+    Arguments: $group, $field, $accessor
+        Returns: \&accessor_coderef ?
+
+    Called by mk_group_ro_accessors for each entry in @fieldspec. Either
+    returns a coderef which will be installed at "&__PACKAGE__::$accessor",
+    or returns "undef" if it elects to install the coderef on its own.
+
+  make_group_wo_accessor
+     __PACKAGE__->make_group_wo_accessor('simple', 'lie', 'lie');
+     __PACKAGE__->make_group_wo_accessor('simple', 'subj', 'subject');
+
+    Arguments: $group, $field, $accessor
+        Returns: \&accessor_coderef ?
+
+    Called by mk_group_wo_accessors for each entry in @fieldspec. Either
+    returns a coderef which will be installed at "&__PACKAGE__::$accessor",
+    or returns "undef" if it elects to install the coderef on its own.
 
 PERFORMANCE
     To provide total flexibility Class::Accessor::Grouped calls methods
