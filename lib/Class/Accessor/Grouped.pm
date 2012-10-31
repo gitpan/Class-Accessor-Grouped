@@ -3,17 +3,19 @@ use strict;
 use warnings;
 use Carp ();
 use Scalar::Util ();
+use Module::Runtime ();
 
 BEGIN {
+  # use M::R to work around the 5.8 require bugs
   if ($] < 5.009_005) {
-    require MRO::Compat;
+    Module::Runtime::require_module('MRO::Compat');
   }
   else {
     require mro;
   }
 }
 
-our $VERSION = '0.10006';
+our $VERSION = '0.10006_01';
 $VERSION = eval $VERSION if $VERSION =~ /_/; # numify for warning-free dev releases
 
 # when changing minimum version don't forget to adjust Makefile.PL as well
@@ -24,48 +26,76 @@ our $USE_XS;
 # the unless defined is here so that we can override the value
 # before require/use, *regardless* of the state of $ENV{CAG_USE_XS}
 $USE_XS = $ENV{CAG_USE_XS}
-    unless defined $USE_XS;
+  unless defined $USE_XS;
+
+BEGIN {
+  package __CAG_ENV__;
+
+  die "Huh?! No minimum C::XSA version?!\n"
+    unless $__minimum_xsa_version;
+
+  local $@;
+  require constant;
+
+  # individual (one const at a time) imports so we are 5.6.2 compatible
+  # if we can - why not ;)
+  constant->import( NO_SUBNAME => eval {
+    Module::Runtime::require_module('Sub::Name')
+  } ? 0 : "$@" );
+
+  constant->import( NO_CXSA => ( !NO_SUBNAME() and eval {
+    Module::Runtime::use_module('Class::XSAccessor' => $__minimum_xsa_version)
+  } ) ? 0 : "$@" );
+
+  constant->import( BROKEN_GOTO => ($] < '5.008009') ? 1 : 0 );
+
+  constant->import( UNSTABLE_DOLLARAT => ($] < '5.013002') ? 1 : 0 );
+
+  constant->import( TRACK_UNDEFER_FAIL => (
+    $INC{'Test/Builder.pm'} || $INC{'Test/Builder2.pm'}
+      and
+    $0 =~ m|^ x?t / .+ \.t $|x
+  ) ? 1 : 0 );
+}
 
 # Yes this method is undocumented
 # Yes it should be a private coderef like all the rest at the end of this file
 # No we can't do that (yet) because the DBIC-CDBI compat layer overrides it
 # %$*@!?&!&#*$!!!
 sub _mk_group_accessors {
-    my($self, $maker, $group, @fields) = @_;
-    my $class = Scalar::Util::blessed $self || $self;
+  my($self, $maker, $group, @fields) = @_;
+  my $class = length (ref ($self) ) ? ref ($self) : $self;
 
-    no strict 'refs';
-    no warnings 'redefine';
+  no strict 'refs';
+  no warnings 'redefine';
 
-    # So we don't have to do lots of lookups inside the loop.
-    $maker = $self->can($maker) unless ref $maker;
+  # So we don't have to do lots of lookups inside the loop.
+  $maker = $self->can($maker) unless ref $maker;
 
-    foreach (@fields) {
-        if( $_ eq 'DESTROY' ) {
-            Carp::carp("Having a data accessor named DESTROY in ".
-                       "'$class' is unwise.");
-        }
+  for (@fields) {
 
-        my ($name, $field) = (ref $_)
-            ? (@$_)
-            : ($_, $_)
-        ;
+    my ($name, $field) = (ref $_) ? (@$_) : ($_, $_);
 
-        my $alias = "_${name}_accessor";
-
-        for my $meth ($name, $alias) {
-
-            # the maker may elect to not return anything, meaning it already
-            # installed the coderef for us (e.g. lack of Sub::Name)
-            my $cref = $self->$maker($group, $field, $meth)
-                or next;
-
-            my $fq_meth = "${class}::${meth}";
-
-            *$fq_meth = Sub::Name::subname($fq_meth, $cref);
-                #unless defined &{$class."\:\:$field"}
-        }
+    for (qw/DESTROY AUTOLOAD CLONE/) {
+      Carp::carp("Having a data accessor named '$name' in '$class' is unwise.")
+        if $name eq $_;
     }
+
+    my $alias = "_${name}_accessor";
+
+    for ($name, $alias) {
+
+      # the maker may elect to not return anything, meaning it already
+      # installed the coderef for us (e.g. lack of Sub::Name)
+      my $cref = $self->$maker($group, $field, $_)
+        or next;
+
+      my $fq_meth = "${class}::$_";
+
+      *$fq_meth = Sub::Name::subname($fq_meth, $cref);
+        #unless defined &{$class."\:\:$field"}
+    }
+  }
 };
 
 # coderef is setup at the end for clarity
@@ -120,10 +150,10 @@ be of the form [ $accessor, $field ].
 =cut
 
 sub mk_group_accessors {
-    my ($self, $group, @fields) = @_;
+  my ($self, $group, @fields) = @_;
 
-    $self->_mk_group_accessors('make_group_accessor', $group, @fields);
-    return;
+  $self->_mk_group_accessors('make_group_accessor', $group, @fields);
+  return;
 }
 
 =head2 mk_group_ro_accessors
@@ -145,9 +175,10 @@ rather than setting the value.
 =cut
 
 sub mk_group_ro_accessors {
-    my($self, $group, @fields) = @_;
+  my($self, $group, @fields) = @_;
 
-    $self->_mk_group_accessors('make_group_ro_accessor', $group, @fields);
+  $self->_mk_group_accessors('make_group_ro_accessor', $group, @fields);
+  return;
 }
 
 =head2 mk_group_wo_accessors
@@ -169,9 +200,10 @@ value rather than getting the value.
 =cut
 
 sub mk_group_wo_accessors {
-    my($self, $group, @fields) = @_;
+  my($self, $group, @fields) = @_;
 
-    $self->_mk_group_accessors('make_group_wo_accessor', $group, @fields);
+  $self->_mk_group_accessors('make_group_wo_accessor', $group, @fields);
+  return;
 }
 
 =head2 get_simple
@@ -190,7 +222,7 @@ name passed as an argument.
 =cut
 
 sub get_simple {
-    return $_[0]->{$_[1]};
+  $_[0]->{$_[1]};
 }
 
 =head2 set_simple
@@ -209,7 +241,7 @@ for the field name passed as an argument.
 =cut
 
 sub set_simple {
-    return $_[0]->{$_[1]} = $_[2];
+  $_[0]->{$_[1]} = $_[2];
 }
 
 
@@ -232,38 +264,30 @@ instances.
 =cut
 
 sub get_inherited {
-    my $class;
-
-    if ( defined( $class = Scalar::Util::blessed $_[0] ) ) {
-        if (Scalar::Util::reftype $_[0] eq 'HASH') {
-          return $_[0]->{$_[1]} if exists $_[0]->{$_[1]};
-        }
-        else {
-          Carp::croak('Cannot get inherited value on an object instance that is not hash-based');
-        }
+  if ( length (ref ($_[0]) ) ) {
+    if (Scalar::Util::reftype $_[0] eq 'HASH') {
+      return $_[0]->{$_[1]} if exists $_[0]->{$_[1]};
+      # everything in @_ is aliased, an assignment won't work
+      splice @_, 0, 1, ref($_[0]);
     }
     else {
-        $class = $_[0];
+      Carp::croak('Cannot get inherited value on an object instance that is not hash-based');
     }
+  }
 
-    no strict 'refs';
-    no warnings 'uninitialized';
+  # if we got this far there is nothing in the instance
+  # OR this is a class call
+  # in any case $_[0] contains the class name (see splice above)
+  no strict 'refs';
+  no warnings 'uninitialized';
 
-    my $cag_slot = '::__cag_'. $_[1];
-    return ${$class.$cag_slot} if defined(${$class.$cag_slot});
+  my $cag_slot = '::__cag_'. $_[1];
+  return ${$_[0].$cag_slot} if defined(${$_[0].$cag_slot});
 
-    # we need to be smarter about recalculation, as @ISA (thus supers) can very well change in-flight
-    my $cur_gen = mro::get_pkg_gen ($class);
-    if ( $cur_gen != ${$class.'::__cag_pkg_gen__'} ) {
-        @{$class.'::__cag_supers__'} = $_[0]->get_super_paths;
-        ${$class.'::__cag_pkg_gen__'} = $cur_gen;
-    }
+  do { return ${$_.$cag_slot} if defined(${$_.$cag_slot}) }
+    for $_[0]->get_super_paths;
 
-    for (@{$class.'::__cag_supers__'}) {
-        return ${$_.$cag_slot} if defined(${$_.$cag_slot});
-    };
-
-    return undef;
+  return undef;
 }
 
 =head2 set_inherited
@@ -287,17 +311,16 @@ hash-based object.
 =cut
 
 sub set_inherited {
-    if (defined Scalar::Util::blessed $_[0]) {
-        if (Scalar::Util::reftype $_[0] eq 'HASH') {
-            return $_[0]->{$_[1]} = $_[2];
-        } else {
-            Carp::croak('Cannot set inherited value on an object instance that is not hash-based');
-        };
+  if (length (ref ($_[0]) ) ) {
+    if (Scalar::Util::reftype $_[0] eq 'HASH') {
+      return $_[0]->{$_[1]} = $_[2];
     } else {
-        no strict 'refs';
-
-        return ${$_[0].'::__cag_'.$_[1]} = $_[2];
+      Carp::croak('Cannot set inherited value on an object instance that is not hash-based');
     };
+  }
+
+  no strict 'refs';
+  ${$_[0].'::__cag_'.$_[1]} = $_[2];
 }
 
 =head2 get_component_class
@@ -312,17 +335,17 @@ Returns: $value
 
 Gets the value of the specified component class.
 
-    __PACKAGE__->mk_group_accessors('component_class' => 'result_class');
+ __PACKAGE__->mk_group_accessors('component_class' => 'result_class');
 
-    $self->result_class->method();
+ $self->result_class->method();
 
-    ## same as
-    $self->get_component_class('result_class')->method();
+ ## same as
+ $self->get_component_class('result_class')->method();
 
 =cut
 
 sub get_component_class {
-    return $_[0]->get_inherited($_[1]);
+  $_[0]->get_inherited($_[1]);
 };
 
 =head2 set_component_class
@@ -338,25 +361,36 @@ Returns: $new_value
 Inherited accessor that automatically loads the specified class before setting
 it. This method will die if the specified class could not be loaded.
 
-    __PACKAGE__->mk_group_accessors('component_class' => 'result_class');
-    __PACKAGE__->result_class('MyClass');
+ __PACKAGE__->mk_group_accessors('component_class' => 'result_class');
+ __PACKAGE__->result_class('MyClass');
 
-    $self->result_class->method();
+ $self->result_class->method();
 
 =cut
 
 sub set_component_class {
-    if ($_[2]) {
-        local $^W = 0;
-        require Class::Inspector;
-        if (Class::Inspector->installed($_[2]) && !Class::Inspector->loaded($_[2])) {
-            eval "require $_[2]";
+  if (defined $_[2] and length $_[2]) {
+    # disable warnings, and prevent $_ being eaten away by a behind-the-scenes
+    # module loading
+    local ($^W, $_);
 
-            Carp::croak("Could not load $_[1] '$_[2]': ", $@) if $@;
-        };
-    };
+    if (__CAG_ENV__::UNSTABLE_DOLLARAT) {
+      my $err;
+      {
+        local $@;
+        eval { Module::Runtime::use_package_optimistically($_[2]) }
+          or $err = $@;
+      }
+      Carp::croak("Could not load $_[1] '$_[2]': $err") if defined $err;
 
-    return $_[0]->set_inherited($_[1], $_[2]);
+    }
+    else {
+      eval { Module::Runtime::use_package_optimistically($_[2]) }
+        or Carp::croak("Could not load $_[1] '$_[2]': $@");
+    }
+  };
+
+  $_[0]->set_inherited($_[1], $_[2]);
 };
 
 =head1 INTERNAL METHODS
@@ -372,7 +406,10 @@ inherited from. This is what drives the traversal done by L</get_inherited>.
 =cut
 
 sub get_super_paths {
-    return @{mro::get_linear_isa( ref($_[0]) || $_[0] )};
+  # get_linear_isa returns the class itself as the 1st element
+  # use @_ as a pre-allocated scratch array
+  (undef, @_) = @{mro::get_linear_isa( length( ref($_[0]) ) ? ref($_[0]) : $_[0] )};
+  @_;
 };
 
 =head2 make_group_accessor
@@ -526,62 +563,6 @@ it under the same terms as perl itself.
 ########################################################################
 ########################################################################
 
-BEGIN {
-
-  die "Huh?! No minimum C::XSA version?!\n"
-    unless $__minimum_xsa_version;
-
-  local $@;
-  my $err;
-
-
-  $err = eval { require Sub::Name; 1; } ? undef : do {
-    delete $INC{'Sub/Name.pm'};   # because older perls suck
-    $@;
-  };
-  *__CAG_ENV__::NO_SUBNAME = $err
-    ? sub () { $err }
-    : sub () { 0 }
-  ;
-
-
-  $err = eval {
-    require Class::XSAccessor;
-    Class::XSAccessor->VERSION($__minimum_xsa_version);
-    require Sub::Name;
-    1;
-  } ? undef : do {
-    delete $INC{'Sub/Name.pm'};   # because older perls suck
-    delete $INC{'Class/XSAccessor.pm'};
-    $@;
-  };
-  *__CAG_ENV__::NO_CXSA = $err
-    ? sub () { $err }
-    : sub () { 0 }
-  ;
-
-
-  *__CAG_ENV__::BROKEN_GOTO = ($] < '5.008009')
-    ? sub () { 1 }
-    : sub () { 0 }
-  ;
-
-
-  *__CAG_ENV__::UNSTABLE_DOLLARAT = ($] < '5.013002')
-    ? sub () { 1 }
-    : sub () { 0 }
-  ;
-
-
-  *__CAG_ENV__::TRACK_UNDEFER_FAIL = (
-    $INC{'Test/Builder.pm'} || $INC{'Test/Builder2.pm'}
-      and
-    $0 =~ m|^ x?t / .+ \.t $|x
-  ) ? sub () { 1 }
-    : sub () { 0 }
-  ;
-}
-
 # Autodetect unless flag supplied
 my $xsa_autodetected;
 if (! defined $USE_XS) {
@@ -617,7 +598,7 @@ my $maker_templates = {
           ? shift->$get('$field')
           : do {
             my \$caller = caller;
-            my \$class = ref \$_[0] || \$_[0];
+            my \$class = length( ref(\$_[0]) ) ? ref(\$_[0]) : \$_[0];
             Carp::croak(\"'\$caller' cannot alter the value of '$field' \".
                         \"(read-only attributes of class '\$class')\");
           }
@@ -636,7 +617,7 @@ my $maker_templates = {
           ? shift->$set('$field', \@_)
           : do {
             my \$caller = caller;
-            my \$class = ref \$_[0] || \$_[0];
+            my \$class = length ( ref(\$_[0]) ) ? ref(\$_[0]) : \$_[0];
             Carp::croak(\"'\$caller' cannot access the value of '$field' \".
                         \"(write-only attributes of class '\$class')\");
           }
@@ -656,9 +637,7 @@ my $original_simple_setter = __PACKAGE__->can ('set_simple');
 # Note!!! Unusual signature
 $gen_accessor = sub {
   my ($type, $class, $group, $field, $methname) = @_;
-  if (my $c = Scalar::Util::blessed( $class )) {
-    $class = $c;
-  }
+  $class = ref $class if length ref $class;
 
   # When installing an XSA simple accessor, we need to make sure we are not
   # short-circuiting a (compile or runtime) get_simple/set_simple override.
@@ -675,7 +654,7 @@ $gen_accessor = sub {
 
     my ($expected_cref, $cached_implementation);
     my $ret = $expected_cref = sub {
-      my $current_class = Scalar::Util::blessed( $_[0] ) || $_[0];
+      my $current_class = length (ref ($_[0] ) ) ? ref ($_[0]) : $_[0];
 
       # $cached_implementation will be set only if the shim got
       # 'around'ed, in which case it is handy to avoid re-running
