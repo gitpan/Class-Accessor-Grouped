@@ -15,7 +15,7 @@ BEGIN {
   }
 }
 
-our $VERSION = '0.10006_01';
+our $VERSION = '0.10006_02';
 $VERSION = eval $VERSION if $VERSION =~ /_/; # numify for warning-free dev releases
 
 # when changing minimum version don't forget to adjust Makefile.PL as well
@@ -29,7 +29,8 @@ $USE_XS = $ENV{CAG_USE_XS}
   unless defined $USE_XS;
 
 BEGIN {
-  package __CAG_ENV__;
+  package # hide from PAUSE
+    __CAG_ENV__;
 
   die "Huh?! No minimum C::XSA version?!\n"
     unless $__minimum_xsa_version;
@@ -76,10 +77,11 @@ sub _mk_group_accessors {
 
     my ($name, $field) = (ref $_) ? (@$_) : ($_, $_);
 
-    for (qw/DESTROY AUTOLOAD CLONE/) {
-      Carp::carp("Having a data accessor named '$name' in '$class' is unwise.")
-        if $name eq $_;
-    }
+    Carp::croak("Illegal accessor name '$name'")
+      unless $name =~ /\A[A-Z_a-z][0-9A-Z_a-z]*\z/;
+
+    Carp::carp("Having a data accessor named '$name' in '$class' is unwise.")
+      if $name =~ /\A(?: DESTROY | AUTOLOAD | CLONE )\z/x;
 
     my $alias = "_${name}_accessor";
 
@@ -98,7 +100,7 @@ sub _mk_group_accessors {
   }
 };
 
-# coderef is setup at the end for clarity
+# $gen_accessor coderef is setup at the end for clarity
 my $gen_accessor;
 
 =head1 NAME
@@ -570,58 +572,71 @@ if (! defined $USE_XS) {
   $xsa_autodetected++;
 }
 
+my $perlstring;
+if ($] < '5.008') {
+  require Data::Dumper;
+  my $d = Data::Dumper->new([])->Indent(0)->Purity(0)->Pad('')->Useqq(1)->Terse(1)->Freezer('')->Toaster('');
+  $perlstring = sub { $d->Values([shift])->Dump };
+}
+else {
+  require B;
+  $perlstring = \&B::perlstring;
+}
+
+
 my $maker_templates = {
   rw => {
-    xs_call => 'accessors',
-    pp_code => sub {
-      my $set = "set_$_[0]";
-      my $get = "get_$_[0]";
-      my $field = $_[1];
-      $field =~ s/'/\\'/g;
+    cxsa_call => 'accessors',
+    pp_generator => sub {
+      # my ($group, $fieldname) = @_;
+      my $quoted_fieldname = $perlstring->($_[1]);
+      sprintf <<'EOS', ($_[0], $quoted_fieldname) x 2;
 
-      "
-        \@_ != 1
-          ? shift->$set('$field', \@_)
-          : shift->$get('$field')
-      "
+@_ > 1
+  ? shift->set_%s(%s, @_)
+  : shift->get_%s(%s)
+EOS
+
     },
   },
   ro => {
-    xs_call => 'getters',
-    pp_code => sub {
-      my $get = "get_$_[0]";
-      my $field = $_[1];
-      $field =~ s/'/\\'/g;
+    cxsa_call => 'getters',
+    pp_generator => sub {
+      # my ($group, $fieldname) = @_;
+      my $quoted_fieldname = $perlstring->($_[1]);
+      sprintf  <<'EOS', $_[0], $quoted_fieldname;
 
-      "
-        \@_ == 1
-          ? shift->$get('$field')
-          : do {
-            my \$caller = caller;
-            my \$class = length( ref(\$_[0]) ) ? ref(\$_[0]) : \$_[0];
-            Carp::croak(\"'\$caller' cannot alter the value of '$field' \".
-                        \"(read-only attributes of class '\$class')\");
-          }
-      "
+@_ > 1
+  ? do {
+    my ($meth) = (caller(0))[3] =~ /([^\:]+)$/;
+    my $class = length( ref($_[0]) ) ? ref($_[0]) : $_[0];
+    Carp::croak(
+      "'$meth' cannot alter its value (read-only attribute of class $class)"
+    );
+  }
+  : shift->get_%s(%s)
+EOS
+
     },
   },
   wo => {
-    xs_call => 'setters',
-    pp_code => sub {
-      my $set = "set_$_[0]";
-      my $field = $_[1];
-      $field =~ s/'/\\'/g;
+    cxsa_call => 'setters',
+    pp_generator => sub {
+      # my ($group, $fieldname) = @_;
+      my $quoted_fieldname = $perlstring->($_[1]);
+      sprintf  <<'EOS', $_[0], $quoted_fieldname;
 
-      "
-        \@_ != 1
-          ? shift->$set('$field', \@_)
-          : do {
-            my \$caller = caller;
-            my \$class = length ( ref(\$_[0]) ) ? ref(\$_[0]) : \$_[0];
-            Carp::croak(\"'\$caller' cannot access the value of '$field' \".
-                        \"(write-only attributes of class '\$class')\");
-          }
-      "
+@_ > 1
+  ? shift->set_%s(%s, @_)
+  : do {
+    my ($meth) = (caller(0))[3] =~ /([^\:]+)$/;
+    my $class = length( ref($_[0]) ) ? ref($_[0]) : $_[0];
+    Carp::croak(
+      "'$meth' cannot access its value (write-only attribute of class $class)"
+    );
+  }
+EOS
+
     },
   },
 };
@@ -678,7 +693,7 @@ $gen_accessor = sub {
           Class::XSAccessor->import(
             replace => 1,
             class => '__CAG__XSA__BREEDER__',
-            $maker_templates->{$type}{xs_call} => {
+            $maker_templates->{$type}{cxsa_call} => {
               $methname => $field,
             },
           );
@@ -729,7 +744,7 @@ $gen_accessor = sub {
             "Deferred version of method $cframe[3] invoked more than once (originally "
           . "invoked at $already_seen). This is a strong indication your code has "
           . 'cached the original ->can derived method coderef, and is using it instead '
-          . 'of the proper method re-lookup, causing performance regressions'
+          . 'of the proper method re-lookup, causing minor performance regressions'
           );
         }
         else {
@@ -767,7 +782,7 @@ $gen_accessor = sub {
   # no Sub::Name - just install the coderefs directly (compiling every time)
   elsif (__CAG_ENV__::NO_SUBNAME) {
     my $src = $accessor_maker_cache->{source}{$type}{$group}{$field} ||=
-      $maker_templates->{$type}{pp_code}->($group, $field);
+      $maker_templates->{$type}{pp_generator}->($group, $field);
 
     no warnings 'redefine';
     local $@ if __CAG_ENV__::UNSTABLE_DOLLARAT;
@@ -780,7 +795,7 @@ $gen_accessor = sub {
   else {
     ($accessor_maker_cache->{pp}{$type}{$group}{$field} ||= do {
       my $src = $accessor_maker_cache->{source}{$type}{$group}{$field} ||=
-        $maker_templates->{$type}{pp_code}->($group, $field);
+        $maker_templates->{$type}{pp_generator}->($group, $field);
 
       local $@ if __CAG_ENV__::UNSTABLE_DOLLARAT;
       eval "sub { my \$dummy; sub { \$dummy if 0; $src } }" or die $@;

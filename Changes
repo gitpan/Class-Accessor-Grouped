@@ -1,12 +1,16 @@
 Revision history for Class::Accessor::Grouped.
 
-0.10006_01 2012-10-31 10:42 (UTC)
+0.10006_02 2012-11-03 10:23 (UTC)
     - Disable tests on perls where Class::XSAccessor emits broken
       error messages (RT#74883, RT#80519)
     - Drop minimum perl to 5.6 (from 5.6.2)
     - Switch all module loading to Module::Runtime and lose
       dependency on Class::Inspector
     - Simplify superclass traversal done by the 'inherited' group type
+    - Fix incorrect quoting of unusual hash keys (fieldnames)
+    - Improve text of ro/wo violation exceptions
+    - Sanity-check accessor names for well-formedness
+      (qr/[A-Z_a-z][0-9A-Z_a-z]*/)
 
 0.10006 2011-12-30 03:52 (UTC)
     - Silence warnings resulting from incomplete can() overrides

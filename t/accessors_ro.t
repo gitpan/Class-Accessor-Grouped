@@ -1,4 +1,4 @@
-use Test::More tests => 48;
+use Test::More tests => 58;
 use Test::Exception;
 use strict;
 use warnings;
@@ -52,6 +52,10 @@ my $test_accessors = {
   lr2name => {
     custom_field => "lr2'field",
   },
+  fieldname_torture => {
+    custom_field => join ('', map { chr($_) } (1..255) ), # FIXME after RT#80569 is fixed 0..255 should work
+    is_xs => $use_xs,
+  },
 };
 
 for my $name (sort keys %$test_accessors) {
@@ -76,7 +80,7 @@ for my $name (sort keys %$test_accessors) {
 
   my $ro_regex = $test_accessors->{$name}{is_xs}
     ? qr/Usage\:.+$name.*\(self\)/
-    : qr/cannot alter the value of '\Q$field\E'/
+    : qr/$name(:?_accessor)?\Q' cannot alter its value (read-only attribute of class AccessorGroupsRO)/
   ;
 
   {
