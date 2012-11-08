@@ -21,6 +21,9 @@ no_index:
   directory:
     - inc
     - t
+recommends:
+  Class::XSAccessor: 1.15
+  Sub::Name: 0.05
 requires:
   Carp: 0
   Module::Runtime: 0.012
@@ -29,4 +32,4 @@ requires:
 resources:
   license: http://dev.perl.org/licenses/
   repository: git://git.shadowcat.co.uk/p5sagit/Class-Accessor-Grouped.git
-version: 0.10006_02
+version: 0.10007
