@@ -23,6 +23,7 @@ t/accessors_xs.t
 t/accessors_xs_cachedwarn.t
 t/basic.t
 t/component.t
+t/illegal_name.t
 t/inherited.t
 t/lib/AccessorGroups.pm
 t/lib/AccessorGroupsComp.pm
