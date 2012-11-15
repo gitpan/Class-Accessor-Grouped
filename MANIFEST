@@ -22,6 +22,7 @@ t/accessors_wo.t
 t/accessors_xs.t
 t/accessors_xs_cachedwarn.t
 t/basic.t
+t/clean_namespace.t
 t/component.t
 t/illegal_name.t
 t/inherited.t
