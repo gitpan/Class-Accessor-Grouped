@@ -28,6 +28,7 @@ t/illegal_name.t
 t/inherited.t
 t/lib/AccessorGroups.pm
 t/lib/AccessorGroupsComp.pm
+t/lib/AccessorGroupsParent.pm
 t/lib/AccessorGroupsRO.pm
 t/lib/AccessorGroupsSubclass.pm
 t/lib/AccessorGroupsWO.pm

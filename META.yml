@@ -5,7 +5,7 @@ author:
 build_requires:
   ExtUtils::MakeMaker: 6.59
   Test::Exception: 0.31
-  Test::More: 0.94
+  Test::More: 0.88
 configure_requires:
   ExtUtils::CBuilder: 0.27
   ExtUtils::MakeMaker: 6.59
@@ -32,4 +32,4 @@ requires:
 resources:
   license: http://dev.perl.org/licenses/
   repository: git://git.shadowcat.co.uk/p5sagit/Class-Accessor-Grouped.git
-version: 0.10009
+version: 0.10010
