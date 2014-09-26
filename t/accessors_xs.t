@@ -1,6 +1,6 @@
 my $has_threads;
 BEGIN { eval '
-  use 5.008001;
+  use 5.008005; # older perls segfault on threading under CXSA
   use threads;
   use threads::shared;
   $has_threads = 1;
@@ -42,7 +42,7 @@ for my $tname (qw/accessors.t accessors_ro.t accessors_wo.t/) {
   my $todo = sub {
     note "\nTesting $tname with USE_XS (pass @{[ $pass++ ]})\n\n";
 
-    my $tfn = catfile($Bin, $tname);
+    my ($tfn) = catfile($Bin, $tname) =~ /(.+)/;
 
     for (
       qw|AccessorGroups.pm AccessorGroups/BeenThereDoneThat.pm AccessorGroupsRO.pm AccessorGroupsSubclass.pm AccessorGroupsParent.pm AccessorGroupsWO.pm|,
@@ -58,18 +58,32 @@ for my $tname (qw/accessors.t accessors_ro.t accessors_wo.t/) {
     local $SIG{__WARN__} = sub { warn @_ unless $_[0] =~ /subroutine .+ redefined/i };
 
     do($tfn);
+
+    666;
   };
 
   if ($has_threads) {
-    threads->create(sub {
-      threads->create(sub {
-        $todo->() for (1,2) }
-      )->join;
-      $todo->() for (1,2);
-    })->join for (1,2)
+    for (1,2) {
+      is (
+        threads->create(sub {
+          is (
+            threads->create(sub {
+              $todo->();
+            })->join,
+            666,
+            'Innner thread joined ok',
+          );
+          777;
+        })->join,
+        777,
+        'Outer thread joined ok',
+      );
+
+      is ($todo->(), 666, "Unthreaded run ok") for (1,2);
+    }
   }
   else {
-    $todo->() for (1, 2);
+    is ($todo->(), 666, "Unthreaded run ok") for (1,2);
   }
 }
 
