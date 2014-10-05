@@ -32,4 +32,4 @@ requires:
 resources:
   license: http://dev.perl.org/licenses/
   repository: git://git.shadowcat.co.uk/p5sagit/Class-Accessor-Grouped.git
-version: 0.10011_01
+version: 0.10012
